@@ -1,10 +1,10 @@
 import type { Screen, Tile } from "./tile";
+import type { Camera } from "./camera";
 
 export type RenderTileMessage = {
   type: "requestTile";
-
-  generation: number;
-  index: number;
+  camera: Camera;
+  tileIndex: number;
   screen: Screen;
 };
 
