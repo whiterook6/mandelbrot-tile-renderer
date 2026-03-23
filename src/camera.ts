@@ -48,7 +48,7 @@ export const zoomCamera = (
     deltaY: number;
   },
 ): Camera => {
-  const k = 0.002;
+  const k = 0.005;
   const zoomFactor = Math.exp(-event.deltaY * k);
   const newZoom = camera.zoom * zoomFactor;
 

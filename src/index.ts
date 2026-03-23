@@ -1,41 +1,14 @@
-import {
-  getScreenPosition,
-  initialCamera,
-  panCamera,
-  zoomCamera,
-  type Camera,
-} from "./camera";
+import { initialCamera, panCamera, zoomCamera, type Camera } from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
+import { Renderer } from "./renderer";
 import type { Screen } from "./tile";
 
 const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
+  const renderer = new Renderer(context);
+
   fitCanvasToLayout(canvas);
   const devicePixelRatio = window.devicePixelRatio || 1;
-
-  const drawDebugRectangle = (
-    worldX: number,
-    worldY: number,
-    width: number,
-    height: number,
-  ) => {
-    const screen: Screen = getScreen(canvas);
-    const topLeft = getScreenPosition(camera, screen, { worldX, worldY });
-    const bottomRight = getScreenPosition(camera, screen, {
-      worldX: worldX + width,
-      worldY: worldY + height,
-    });
-    const x = Math.round(topLeft.screenX);
-    const y = Math.round(topLeft.screenY);
-    const w = Math.round(bottomRight.screenX - topLeft.screenX);
-    const h = Math.round(bottomRight.screenY - topLeft.screenY);
-    context.fillStyle = "red";
-    context.fillRect(x, y, w, h);
-  };
-
-  const clearCanvas = () => {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-  };
 
   let camera: Camera = { ...initialCamera };
   const handleWheel = (event: WheelEvent) => {
@@ -45,8 +18,8 @@ const main = () => {
       cursorY: event.clientY * devicePixelRatio,
       deltaY: event.deltaY,
     });
-    clearCanvas();
-    drawDebugRectangle(0, 0, 50, 50);
+
+    renderer.render(camera, screen);
   };
   window.addEventListener("wheel", handleWheel);
 
@@ -55,12 +28,13 @@ const main = () => {
       return;
     }
 
+    const screen: Screen = getScreen(canvas);
     camera = panCamera(camera, {
       movementX: event.movementX * devicePixelRatio,
       movementY: event.movementY * devicePixelRatio,
     });
-    clearCanvas();
-    drawDebugRectangle(0, 0, 50, 50);
+
+    renderer.render(camera, screen);
   };
 
   let isDragging = false;
@@ -78,7 +52,7 @@ const main = () => {
 
   window.addEventListener("mousedown", handleMouseDown);
 
-  drawDebugRectangle(0, 0, 50, 50);
+  renderer.render(camera, getScreen(canvas));
 };
 
 main();
