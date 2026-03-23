@@ -13,7 +13,7 @@ type RenderTileMessage = {
 type RenderedTileMessage = {
   type: "respondTile";
   generation: number;
-  imageData: Float32Array;
+  imageData: Uint8ClampedArray;
   tile: Tile;
 };
 
@@ -35,8 +35,8 @@ const mandelbrot = (
     const x2 = zx * zx;
     const y2 = zy * zy;
     if (x2 + y2 > 4) {
-      const brightness = i / maxIterations;
-      return [brightness, brightness, brightness, 1];
+      const brightness = Math.floor((255 * i) / maxIterations);
+      return [brightness, brightness, brightness, 255];
     }
     const tmp = zx * zx - zy * zy + worldX;
     zy = 2 * zx * zy + worldY;
@@ -48,13 +48,14 @@ const mandelbrot = (
 self.addEventListener(
   "message",
   async (event: MessageEvent<RenderTileMessage>) => {
+    console.log("received message", event.data);
     const { camera, screen, tileIndex } = event.data;
-    if (camera.generation <= scope.generation) {
+    if (camera.generation < scope.generation) {
       return;
     }
     scope.generation = camera.generation;
     const tile = getTile(tileIndex, screen);
-    const imageData = new Float32Array(tile.width * tile.height * 4);
+    const imageData = new Uint8ClampedArray(tile.width * tile.height * 4);
 
     // Tile (tile.x, tile.y) is in screen space; map each pixel through the camera
     // (same inverse as getScreenPosition). Optional +0.5 samples pixel centers.
@@ -81,6 +82,7 @@ self.addEventListener(
     }
 
     if (scope.generation === camera.generation) {
+      console.log("responding to tile", tileIndex);
       const response: RenderedTileMessage = {
         type: "respondTile",
         generation: camera.generation,

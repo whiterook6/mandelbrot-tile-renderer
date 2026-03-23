@@ -1,4 +1,4 @@
-import { initialCamera, panCamera, zoomCamera, type Camera } from "./camera";
+import { panCamera, zoomCamera, type Camera } from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import type { Screen } from "./tile";
@@ -7,10 +7,19 @@ const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
   const renderer = new Renderer(context);
 
+  const zoomToMandelbrot = (canvas: HTMLCanvasElement): Camera => {
+    return {
+      worldX: 0,
+      worldY: 0,
+      zoom: canvas.width / 3.5,
+      generation: 0,
+    };
+  };
+
   fitCanvasToLayout(canvas);
   const devicePixelRatio = window.devicePixelRatio || 1;
 
-  let camera: Camera = { ...initialCamera };
+  let camera: Camera = zoomToMandelbrot(canvas);
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
     camera = zoomCamera(camera, screen, {
@@ -52,7 +61,7 @@ const main = () => {
 
   window.addEventListener("mousedown", handleMouseDown);
 
-  renderer.render(camera, getScreen(canvas));
+  renderer.render(camera, getScreen(canvas), true);
 };
 
 main();

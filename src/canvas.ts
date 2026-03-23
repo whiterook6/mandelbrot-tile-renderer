@@ -38,7 +38,7 @@ export const getScreen = (canvas: HTMLCanvasElement): Screen => {
   return {
     width: canvas.width,
     height: canvas.height,
-    rowCount: 1,
-    columnCount: 1,
+    rowCount: 4,
+    columnCount: 4,
   };
 };
