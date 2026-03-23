@@ -12,6 +12,8 @@ export type RenderedTileMessage = {
   type: "respondTile";
 
   generation: number;
-  imageData: Uint8ClampedArray;
+  /** Escape iteration per pixel; interior pixels use `maxIterations`. */
+  iterations: Uint16Array;
+  maxIterations: number;
   tile: Tile;
 };

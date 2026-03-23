@@ -4,6 +4,34 @@ import type { Screen } from "./tile";
 
 const RENDER_DEBOUNCE_MS = 250;
 
+const iterationsToImageData = (
+  iterations: Uint16Array,
+  maxIterations: number,
+  width: number,
+  height: number,
+): ImageData => {
+  const image = new ImageData(width, height);
+  const out = image.data;
+  const n = width * height;
+  for (let i = 0; i < n; i++) {
+    const iter = iterations[i]!;
+    const o = i * 4;
+    if (iter >= maxIterations) {
+      out[o] = 255;
+      out[o + 1] = 255;
+      out[o + 2] = 255;
+      out[o + 3] = 255;
+    } else {
+      const brightness = Math.floor((255 * iter) / maxIterations);
+      out[o] = brightness;
+      out[o + 1] = brightness;
+      out[o + 2] = brightness;
+      out[o + 3] = 255;
+    }
+  }
+  return image;
+};
+
 const shuffleTileIndices = (count: number): number[] => {
   const indices = Array.from({ length: count }, (_, i) => i);
   for (let i = indices.length - 1; i > 0; i--) {
@@ -125,12 +153,16 @@ export class Renderer {
   };
 
   public receiveTile = (message: RenderedTileMessage) => {
-    const { generation, imageData, tile } = message;
+    const { generation, iterations, maxIterations, tile } = message;
     if (generation !== this.camera.generation) {
       return;
     }
-    const image = new ImageData(tile.width, tile.height);
-    image.data.set(imageData);
+    const image = iterationsToImageData(
+      iterations,
+      maxIterations,
+      tile.width,
+      tile.height,
+    );
     this.context.putImageData(image, tile.x, tile.y);
   };
 }
