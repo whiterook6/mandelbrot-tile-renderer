@@ -63,7 +63,7 @@ const main = () => {
 
   window.addEventListener("keydown", (event) => {
     const screen: Screen = getScreen(canvas);
-    switch (event.key){
+    switch (event.key) {
       case "Escape":
         // reset the camera to the initial position
         camera = zoomToMandelbrot(canvas);
@@ -73,7 +73,7 @@ const main = () => {
         // zoom in around the center of the screen
         camera = {
           ...camera,
-          zoom: camera.zoom * 2
+          zoom: camera.zoom * 2,
         };
         renderer.render(camera, screen);
         break;
@@ -81,7 +81,7 @@ const main = () => {
         // zoom out around the center of the screen
         camera = {
           ...camera,
-          zoom: camera.zoom / 2
+          zoom: camera.zoom / 2,
         };
         renderer.render(camera, screen);
         break;
