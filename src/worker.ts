@@ -47,7 +47,7 @@ const mandelbrot = (
 
 self.addEventListener(
   "message",
-  async (event: MessageEvent<RenderTileMessage>) => {
+  (event: MessageEvent<RenderTileMessage>) => {
     console.log("received message", event.data);
     const { camera, screen, tileIndex } = event.data;
     if (camera.generation < scope.generation) {
@@ -64,11 +64,6 @@ self.addEventListener(
     // Tile (tile.x, tile.y) is in screen space; map each pixel through the camera
     // (same inverse as getScreenPosition). Optional +0.5 samples pixel centers.
     for (let y = 0; y < tile.height; y++) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (scope.generation !== camera.generation) {
-        return;
-      }
-
       for (let x = 0; x < tile.width; x++) {
         const screenX = tile.x + x + 0.5;
         const screenY = tile.y + y + 0.5;
@@ -85,15 +80,12 @@ self.addEventListener(
       }
     }
 
-    if (scope.generation === camera.generation) {
-      console.log("responding to tile", tileIndex);
-      const response: RenderedTileMessage = {
-        type: "respondTile",
-        generation: camera.generation,
-        imageData,
-        tile,
-      };
-      self.postMessage(response);
-    }
+    const response: RenderedTileMessage = {
+      type: "respondTile",
+      generation: camera.generation,
+      imageData,
+      tile,
+    };
+    self.postMessage(response);
   },
 );

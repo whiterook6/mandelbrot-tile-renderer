@@ -2,7 +2,7 @@ import { initialCamera, type Camera } from "./camera";
 import type { RenderedTileMessage } from "./messages";
 import type { Screen } from "./tile";
 
-const RENDER_DEBOUNCE_MS = 500;
+const RENDER_DEBOUNCE_MS = 250;
 
 const shuffleTileIndices = (count: number): number[] => {
   const indices = Array.from({ length: count }, (_, i) => i);

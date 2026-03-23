@@ -9,7 +9,7 @@ const main = () => {
 
   const zoomToMandelbrot = (canvas: HTMLCanvasElement): Camera => {
     return {
-      worldX: 0,
+      worldX: -0.7436438870371587,
       worldY: 0,
       zoom: canvas.width / 3.5,
       generation: 0,
