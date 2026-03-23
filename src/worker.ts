@@ -27,8 +27,8 @@ const scope = {
 const mandelbrot = (
   worldX: number,
   worldY: number,
+  maxIterations: number,
 ): [number, number, number, number] => {
-  const maxIterations = 1000;
   let zx = worldX;
   let zy = worldY;
   for (let i = 0; i < maxIterations; i++) {
@@ -56,6 +56,10 @@ self.addEventListener(
     scope.generation = camera.generation;
     const tile = getTile(tileIndex, screen);
     const imageData = new Uint8ClampedArray(tile.width * tile.height * 4);
+    const maxIterations = Math.min(
+      4000,
+      Math.floor(64 + 24 * Math.log2(camera.zoom))
+    );
 
     // Tile (tile.x, tile.y) is in screen space; map each pixel through the camera
     // (same inverse as getScreenPosition). Optional +0.5 samples pixel centers.
@@ -72,7 +76,7 @@ self.addEventListener(
           screenX,
           screenY,
         });
-        const [r, g, b, a] = mandelbrot(worldX, worldY);
+        const [r, g, b, a] = mandelbrot(worldX, worldY, maxIterations);
         const index = (y * tile.width + x) * 4;
         imageData[index + 0] = r;
         imageData[index + 1] = g;
