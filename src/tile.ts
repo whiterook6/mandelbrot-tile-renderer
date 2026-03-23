@@ -3,7 +3,7 @@ export type Screen = {
   height: number;
   rowCount: number;
   columnCount: number;
-}
+};
 
 export type Tile = {
   x: number;

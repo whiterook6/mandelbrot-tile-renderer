@@ -4,7 +4,7 @@ import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { getTile } from "./tile";
 
 const scope = {
-  generation: 0
+  generation: 0,
 };
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {

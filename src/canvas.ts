@@ -1,6 +1,8 @@
 import type { Screen } from "./tile";
 
-export const getCanvas = (id: string): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } => {
+export const getCanvas = (
+  id: string,
+): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } => {
   const canvas = document.getElementById(id);
   if (!(canvas instanceof HTMLCanvasElement)) {
     throw new Error(`Canvas with id ${id} not found`);

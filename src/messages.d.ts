@@ -12,6 +12,6 @@ export type RenderedTileMessage = {
   type: "respondTile";
 
   generation: number;
-  imageData: Float32Array,
-  tile: Tile,
-}
+  imageData: Float32Array;
+  tile: Tile;
+};

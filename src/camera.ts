@@ -12,44 +12,55 @@ export type View = {
   y: number;
   width: number;
   height: number;
-}
+};
 
 export const initialCamera: Camera = {
   worldX: 0,
   worldY: 0,
   zoom: 1,
-  generation: 0
+  generation: 0,
 };
 
-export const panCamera = (camera: Camera, event: {
-  movementX: number;
-  movementY: number;
-}): Camera => {
+export const panCamera = (
+  camera: Camera,
+  event: {
+    movementX: number;
+    movementY: number;
+  },
+): Camera => {
   const deltaX = event.movementX;
   const deltaY = event.movementY;
-  
+
   return {
     worldX: camera.worldX - deltaX / camera.zoom,
     worldY: camera.worldY - deltaY / camera.zoom,
     zoom: camera.zoom,
-    generation: camera.generation + 1
+    generation: camera.generation + 1,
   };
-}
+};
 
-export const zoomCamera = (camera: Camera, screen: Screen, event: {
-  cursorX: number;
-  cursorY: number;
-  deltaY: number;
-}): Camera => {
+export const zoomCamera = (
+  camera: Camera,
+  screen: Screen,
+  event: {
+    cursorX: number;
+    cursorY: number;
+    deltaY: number;
+  },
+): Camera => {
   const k = 0.002;
   const zoomFactor = Math.exp(-event.deltaY * k);
-  const newZoom = camera.zoom * zoomFactor;  
+  const newZoom = camera.zoom * zoomFactor;
 
   return {
-    worldX: camera.worldX + (event.cursorX - screen.width / 2) * (1 / camera.zoom - 1 / newZoom), 
-    worldY: camera.worldY + (event.cursorY - screen.height / 2) * (1 / camera.zoom - 1 / newZoom), 
+    worldX:
+      camera.worldX +
+      (event.cursorX - screen.width / 2) * (1 / camera.zoom - 1 / newZoom),
+    worldY:
+      camera.worldY +
+      (event.cursorY - screen.height / 2) * (1 / camera.zoom - 1 / newZoom),
     zoom: newZoom,
-    generation: camera.generation + 1
+    generation: camera.generation + 1,
   };
 };
 
@@ -63,7 +74,7 @@ export const getView = (camera: Camera, screen: Screen): View => {
     width: worldWidth,
     height: worldHeight,
   };
-}
+};
 
 export const getWorldPosition = (
   camera: Camera,
