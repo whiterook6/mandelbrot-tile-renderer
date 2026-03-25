@@ -25,6 +25,35 @@ const mandelbrotIterations = (
   return maxIterations;
 };
 
+const juliaIterations = (
+  worldX: number,
+  worldY: number,
+  maxIterations: number,
+): number => {
+  // z starts at the pixel
+  let zx = worldX;
+  let zy = worldY;
+
+  // fixed constant c
+  const cx = -0.835;
+  const cy = 0.312;
+
+  for (let i = 0; i < maxIterations; i++) {
+    const x2 = zx * zx;
+    const y2 = zy * zy;
+
+    if (x2 + y2 > 4) {
+      return i;
+    }
+
+    const tmp = x2 - y2 + cx;
+    zy = 2 * zx * zy + cy;
+    zx = tmp;
+  }
+
+  return maxIterations;
+};
+
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   const { camera, screen, tileIndex } = event.data;
   const tile = getTile(tileIndex, screen);
@@ -51,7 +80,7 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
       const worldX = topLeftWorldX + x * worldXStep;
       const worldY = topLeftWorldY + y * worldYStep;
       const i = y * tile.width + x;
-      iterations[i] = mandelbrotIterations(worldX, worldY, maxIterations);
+      iterations[i] = juliaIterations(worldX, worldY, maxIterations);
     }
   }
 
