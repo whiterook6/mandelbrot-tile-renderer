@@ -42,16 +42,22 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     Math.floor(64 + 24 * Math.log2(camera.zoom)),
   );
 
-  // Tile (tile.x, tile.y) is in screen space; map each pixel through the camera
-  // (same inverse as getScreenPosition). Optional +0.5 samples pixel centers.
+  const {worldX: topLeftWorldX, worldY: topLeftWorldY} = getWorldPosition(camera, screen, {
+    screenX: tile.x + 0.5,
+    screenY: tile.y + 0.5,
+  });
+  const {worldX: bottomRightWorldX, worldY: bottomRightWorldY} = getWorldPosition(camera, screen, {
+    screenX: tile.x + tile.width + 0.5,
+    screenY: tile.y + tile.height + 0.5,
+  });
+  const worldWidth = bottomRightWorldX - topLeftWorldX;
+  const worldHeight = bottomRightWorldY - topLeftWorldY;
+  const worldXStep = worldWidth / tile.width;
+  const worldYStep = worldHeight / tile.height;
   for (let y = 0; y < tile.height; y++) {
     for (let x = 0; x < tile.width; x++) {
-      const screenX = tile.x + x + 0.5;
-      const screenY = tile.y + y + 0.5;
-      const { worldX, worldY } = getWorldPosition(camera, screen, {
-        screenX,
-        screenY,
-      });
+      const worldX = topLeftWorldX + x * worldXStep;
+      const worldY = topLeftWorldY + y * worldYStep;
       const i = y * tile.width + x;
       iterations[i] = mandelbrotIterations(worldX, worldY, maxIterations);
     }
