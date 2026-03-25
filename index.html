@@ -4,37 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tile-renderer</title>
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        overflow: hidden;
-      }
-      #tile-canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-      #bottom-bar {
-        position: fixed;
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background-color: white;
-        border-radius: 8px;
-        padding: 0 8px;
-        box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
-      }
-    </style>
+    <link rel="stylesheet" href="/src/style.css">
   </head>
   <body>
     <canvas id="tile-canvas"></canvas>
-    <div id="bottom-bar"></div>
+    <div id="bottom-bar">
+      <div id="view-controls">
+        <span id="view-x"></span>
+        <span id="view-y"></span>
+        <span id="view-zoom"></span>
+        <button id="reset-view">Home</button>
+      </div>
+    </div>
     <script type="module" src="/src/index.ts"></script>
   </body>
 </html>

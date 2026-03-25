@@ -3,7 +3,7 @@ import { rainbowGradient } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import type { Screen } from "./tile";
 
-const RENDER_DEBOUNCE_MS = 250;
+const RENDER_DEBOUNCE_MS = 125;
 
 const iterationsToImageData = (
   iterations: Uint16Array,

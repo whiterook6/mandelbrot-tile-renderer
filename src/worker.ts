@@ -80,7 +80,7 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
       const worldX = topLeftWorldX + x * worldXStep;
       const worldY = topLeftWorldY + y * worldYStep;
       const i = y * tile.width + x;
-      iterations[i] = juliaIterations(worldX, worldY, maxIterations);
+      iterations[i] = mandelbrotIterations(worldX, worldY, maxIterations);
     }
   }
 

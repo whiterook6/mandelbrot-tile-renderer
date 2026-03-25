@@ -1,6 +1,7 @@
 import { panCamera, zoomCamera, type Camera } from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
+import { Status } from "./status";
 import type { Screen } from "./tile";
 
 const getInitialCamera = (fallback: Camera) => {
@@ -33,6 +34,10 @@ const main = () => {
   const devicePixelRatio = window.devicePixelRatio || 1;
 
   let camera: Camera = getInitialCamera(zoomToMandelbrot(canvas));
+  {
+    const screen: Screen = getScreen(canvas);
+    Status.setView(screen, camera);
+  }
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
     camera = zoomCamera(camera, screen, {
@@ -41,6 +46,7 @@ const main = () => {
       deltaY: event.deltaY,
     });
     localStorage.setItem("camera", JSON.stringify(camera));
+    Status.setView(screen, camera);
     renderer.render(camera, screen);
   };
   window.addEventListener("wheel", handleWheel);
@@ -57,6 +63,7 @@ const main = () => {
     });
 
     localStorage.setItem("camera", JSON.stringify(camera));
+    Status.setView(screen, camera);
     renderer.render(camera, screen);
   };
 
@@ -82,6 +89,7 @@ const main = () => {
         // reset the camera to the initial position
         camera = zoomToMandelbrot(canvas);
         localStorage.setItem("camera", JSON.stringify(camera));
+        Status.setView(screen, camera);
         renderer.render(camera, screen, true);
         break;
       case "+":
@@ -91,6 +99,7 @@ const main = () => {
           zoom: camera.zoom * 2,
         };
         localStorage.setItem("camera", JSON.stringify(camera));
+        Status.setView(screen, camera);
         renderer.render(camera, screen);
         break;
       case "-":
@@ -100,6 +109,7 @@ const main = () => {
           zoom: camera.zoom / 2,
         };
         localStorage.setItem("camera", JSON.stringify(camera));
+        Status.setView(screen, camera);
         renderer.render(camera, screen);
         break;
     }
