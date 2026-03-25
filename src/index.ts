@@ -3,6 +3,19 @@ import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import type { Screen } from "./tile";
 
+const getInitialCamera = (fallback: Camera) => {
+  const fromLocalStorage = localStorage.getItem("camera");
+  try {
+    if (fromLocalStorage){
+      return JSON.parse(fromLocalStorage);
+    }
+  } catch (error) {
+    console.error("Error parsing camera from localStorage", error);
+    localStorage.setItem("camera", JSON.stringify(fallback));
+  }
+  return fallback;
+}
+
 const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
   const renderer = new Renderer(context);
@@ -19,7 +32,7 @@ const main = () => {
   fitCanvasToLayout(canvas);
   const devicePixelRatio = window.devicePixelRatio || 1;
 
-  let camera: Camera = zoomToMandelbrot(canvas);
+  let camera: Camera = getInitialCamera(zoomToMandelbrot(canvas));
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
     camera = zoomCamera(camera, screen, {
@@ -27,7 +40,7 @@ const main = () => {
       cursorY: event.clientY * devicePixelRatio,
       deltaY: event.deltaY,
     });
-
+    localStorage.setItem("camera", JSON.stringify(camera));
     renderer.render(camera, screen);
   };
   window.addEventListener("wheel", handleWheel);
@@ -43,6 +56,7 @@ const main = () => {
       movementY: event.movementY * devicePixelRatio,
     });
 
+    localStorage.setItem("camera", JSON.stringify(camera));
     renderer.render(camera, screen);
   };
 
@@ -67,6 +81,7 @@ const main = () => {
       case "Escape":
         // reset the camera to the initial position
         camera = zoomToMandelbrot(canvas);
+        localStorage.setItem("camera", JSON.stringify(camera));
         renderer.render(camera, screen, true);
         break;
       case "+":
@@ -75,6 +90,7 @@ const main = () => {
           ...camera,
           zoom: camera.zoom * 2,
         };
+        localStorage.setItem("camera", JSON.stringify(camera));
         renderer.render(camera, screen);
         break;
       case "-":
@@ -83,6 +99,7 @@ const main = () => {
           ...camera,
           zoom: camera.zoom / 2,
         };
+        localStorage.setItem("camera", JSON.stringify(camera));
         renderer.render(camera, screen);
         break;
     }

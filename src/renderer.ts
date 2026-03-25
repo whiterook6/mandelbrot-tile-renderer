@@ -1,4 +1,5 @@
 import { initialCamera, type Camera } from "./camera";
+import { rainbowGradient, simpleGradient } from "./gradient";
 import type { RenderedTileMessage } from "./messages";
 import type { Screen } from "./tile";
 
@@ -16,18 +17,11 @@ const iterationsToImageData = (
   for (let i = 0; i < n; i++) {
     const iter = iterations[i]!;
     const o = i * 4;
-    if (iter >= maxIterations) {
-      out[o] = 255;
-      out[o + 1] = 255;
-      out[o + 2] = 255;
-      out[o + 3] = 255;
-    } else {
-      const brightness = Math.floor((255 * iter) / maxIterations);
-      out[o] = brightness;
-      out[o + 1] = brightness;
-      out[o + 2] = brightness;
-      out[o + 3] = 255;
-    }
+    const pixel = rainbowGradient(iter === maxIterations, iter, maxIterations);
+    out[o] = pixel[0];
+    out[o + 1] = pixel[1];
+    out[o + 2] = pixel[2];
+    out[o + 3] = pixel[3];
   }
   return image;
 };
@@ -120,7 +114,6 @@ export class Renderer {
       worker.addEventListener(
         "message",
         (event: MessageEvent<RenderedTileMessage>) => {
-          console.log("received message", event.data);
           this.receiveTile(event.data);
           const nextIndex = queue.shift();
           if (nextIndex !== undefined) {

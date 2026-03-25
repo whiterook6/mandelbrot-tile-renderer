@@ -30,7 +30,6 @@ const mandelbrotIterations = (
 };
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
-  console.log("received message", event.data);
   const { camera, screen, tileIndex } = event.data;
   if (camera.generation < scope.generation) {
     return;
@@ -39,7 +38,7 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   const tile = getTile(tileIndex, screen);
   const iterations = new Uint16Array(tile.width * tile.height);
   const maxIterations = Math.min(
-    4000,
+    16000,
     Math.floor(64 + 24 * Math.log2(camera.zoom)),
   );
 

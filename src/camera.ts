@@ -81,11 +81,10 @@ export const getWorldPosition = (
   screen: Screen,
   position: { screenX: number; screenY: number },
 ): { worldX: number; worldY: number } => {
-  const worldPerPixel = 1 / camera.zoom;
   const worldX =
-    camera.worldX + (position.screenX - screen.width / 2) * worldPerPixel;
+    camera.worldX + (position.screenX - screen.width / 2) / camera.zoom;
   const worldY =
-    camera.worldY + (position.screenY - screen.height / 2) * worldPerPixel;
+    camera.worldY + (position.screenY - screen.height / 2) / camera.zoom;
   return { worldX, worldY };
 };
 
