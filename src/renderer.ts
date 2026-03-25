@@ -1,5 +1,5 @@
 import { initialCamera, type Camera } from "./camera";
-import { rainbowGradient, simpleGradient } from "./gradient";
+import { rainbowGradient } from "./gradient";
 import type { RenderedTileMessage } from "./messages";
 import type { Screen } from "./tile";
 
