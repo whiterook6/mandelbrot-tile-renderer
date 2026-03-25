@@ -1,25 +1,48 @@
-import { panCamera, zoomCamera, type Camera } from "./camera";
+import {
+  mergeCamera,
+  panCamera,
+  twistCamera,
+  zoomCamera,
+  type Camera,
+} from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
 
-const getInitialCamera = (fallback: Camera) => {
+const getInitialCamera = (fallback: Camera): Camera => {
   const fromLocalStorage = localStorage.getItem("camera");
   try {
     if (fromLocalStorage) {
-      return JSON.parse(fromLocalStorage);
+      return mergeCamera(fallback, JSON.parse(fromLocalStorage));
     }
   } catch (error) {
     console.error("Error parsing camera from localStorage", error);
     localStorage.setItem("camera", JSON.stringify(fallback));
   }
-  return fallback;
+  return mergeCamera(fallback, null);
 };
 
 const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
   const renderer = new Renderer(context);
+
+  const canvasCoordsFromEvent = (event: MouseEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) * canvas.width) / rect.width;
+    const y = ((event.clientY - rect.top) * canvas.height) / rect.height;
+    return { x, y };
+  };
+
+  const movementInCanvasPixels = (event: MouseEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      movementX: event.movementX * scaleX,
+      movementY: event.movementY * scaleY,
+    };
+  };
 
   const setView = (camera: Camera) => {
     const screen: Screen = getScreen(canvas);
@@ -28,11 +51,12 @@ const main = () => {
     renderer.render(camera, screen);
   };
 
-  const zoomToMandelbrot = (canvas: HTMLCanvasElement): Camera => {
+  const zoomToMandelbrot = (canvasEl: HTMLCanvasElement): Camera => {
     return {
       worldX: -0.7436438870371587,
       worldY: 0,
-      zoom: canvas.width / 3.5,
+      zoom: canvasEl.width / 3.5,
+      rotation: 0,
       generation: 0,
     };
   };
@@ -44,66 +68,113 @@ const main = () => {
     camera = zoomToMandelbrot(canvas);
     setView(camera);
   });
+
   const handleWheel = (event: WheelEvent) => {
-    const devicePixelRatio = window.devicePixelRatio || 1;
     const screen: Screen = getScreen(canvas);
+    const { x: cursorX, y: cursorY } = canvasCoordsFromEvent(event);
     camera = zoomCamera(camera, screen, {
-      cursorX: event.clientX * devicePixelRatio,
-      cursorY: event.clientY * devicePixelRatio,
+      cursorX,
+      cursorY,
       deltaY: event.deltaY,
     });
     setView(camera);
   };
   window.addEventListener("wheel", handleWheel);
 
-  const handleMouseMove = (event: MouseEvent) => {
-    if (!isDragging) {
+  let isPanning = false;
+  let isTwisting = false;
+  let twistVPrev = { x: 0, y: 0 };
+
+  const handlePanMouseMove = (event: MouseEvent) => {
+    if (!isPanning) {
       return;
     }
-
-    camera = panCamera(camera, {
-      movementX: event.movementX * devicePixelRatio,
-      movementY: event.movementY * devicePixelRatio,
-    });
-
+    const { movementX, movementY } = movementInCanvasPixels(event);
+    camera = panCamera(camera, { movementX, movementY });
     setView(camera);
   };
 
-  let isDragging = false;
-  const handleMouseUp = () => {
-    isDragging = false;
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
-  };
-  const handleMouseDown = (event: MouseEvent) => {
-    if (event.button !== 0) return;
-    isDragging = true;
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+  const handlePanMouseUp = () => {
+    isPanning = false;
+    window.removeEventListener("mousemove", handlePanMouseMove);
+    window.removeEventListener("mouseup", handlePanMouseUp);
   };
 
-  window.addEventListener("mousedown", handleMouseDown);
+  const handlePanMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0 || isTwisting) {
+      return;
+    }
+    event.preventDefault();
+    isPanning = true;
+    window.addEventListener("mousemove", handlePanMouseMove);
+    window.addEventListener("mouseup", handlePanMouseUp);
+  };
+
+  const handleTwistMouseMove = (event: MouseEvent) => {
+    if (!isTwisting) {
+      return;
+    }
+    const screen: Screen = getScreen(canvas);
+    const { x, y } = canvasCoordsFromEvent(event);
+    const vCurr = {
+      x: x - screen.width / 2,
+      y: y - screen.height / 2,
+    };
+    const next = twistCamera(camera, twistVPrev, vCurr);
+    if (next !== null) {
+      camera = next;
+      setView(camera);
+    }
+    twistVPrev = vCurr;
+  };
+
+  const handleTwistMouseUp = () => {
+    isTwisting = false;
+    window.removeEventListener("mousemove", handleTwistMouseMove);
+    window.removeEventListener("mouseup", handleTwistMouseUp);
+  };
+
+  const handleTwistMouseDown = (event: MouseEvent) => {
+    if (event.button !== 2 || isPanning) {
+      return;
+    }
+    event.preventDefault();
+    isTwisting = true;
+    const screen: Screen = getScreen(canvas);
+    const { x, y } = canvasCoordsFromEvent(event);
+    twistVPrev = {
+      x: x - screen.width / 2,
+      y: y - screen.height / 2,
+    };
+    window.addEventListener("mousemove", handleTwistMouseMove);
+    window.addEventListener("mouseup", handleTwistMouseUp);
+  };
+
+  canvas.addEventListener("mousedown", handlePanMouseDown);
+  canvas.addEventListener("mousedown", handleTwistMouseDown);
+  canvas.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
 
   window.addEventListener("keydown", (event) => {
     switch (event.key) {
       case "Escape":
-        // reset the camera to the initial position
         camera = zoomToMandelbrot(canvas);
         setView(camera);
         break;
       case "+":
-        // zoom in around the center of the screen
         camera = {
           ...camera,
           zoom: camera.zoom * 2,
+          generation: camera.generation + 1,
         };
         setView(camera);
         break;
       case "-":
-        // zoom out around the center of the screen
         camera = {
           ...camera,
           zoom: camera.zoom / 2,
+          generation: camera.generation + 1,
         };
         setView(camera);
         break;

@@ -63,27 +63,25 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     Math.floor(64 + 24 * Math.log2(camera.zoom)),
   );
 
-  const { worldX: topLeftWorldX, worldY: topLeftWorldY } = getWorldPosition(
-    camera,
-    screen,
-    {
-      screenX: tile.x + 0.5,
-      screenY: tile.y + 0.5,
-    },
-  );
-  const { worldX: bottomRightWorldX, worldY: bottomRightWorldY } =
-    getWorldPosition(camera, screen, {
-      screenX: tile.x + tile.width + 0.5,
-      screenY: tile.y + tile.height + 0.5,
-    });
-  const worldWidth = bottomRightWorldX - topLeftWorldX;
-  const worldHeight = bottomRightWorldY - topLeftWorldY;
-  const worldXStep = worldWidth / tile.width;
-  const worldYStep = worldHeight / tile.height;
+  const origin = getWorldPosition(camera, screen, {
+    screenX: tile.x + 0.5,
+    screenY: tile.y + 0.5,
+  });
+  const right = getWorldPosition(camera, screen, {
+    screenX: tile.x + 1.5,
+    screenY: tile.y + 0.5,
+  });
+  const down = getWorldPosition(camera, screen, {
+    screenX: tile.x + 0.5,
+    screenY: tile.y + 1.5,
+  });
+  const dx = { worldX: right.worldX - origin.worldX, worldY: right.worldY - origin.worldY };
+  const dy = { worldX: down.worldX - origin.worldX, worldY: down.worldY - origin.worldY };
+
   for (let y = 0; y < tile.height; y++) {
     for (let x = 0; x < tile.width; x++) {
-      const worldX = topLeftWorldX + x * worldXStep;
-      const worldY = topLeftWorldY + y * worldYStep;
+      const worldX = origin.worldX + x * dx.worldX + y * dy.worldX;
+      const worldY = origin.worldY + x * dx.worldY + y * dy.worldY;
       const i = y * tile.width + x;
       iterations[i] = mandelbrotIterations(worldX, worldY, maxIterations);
     }
