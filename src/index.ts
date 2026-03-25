@@ -38,6 +38,13 @@ const main = () => {
     const screen: Screen = getScreen(canvas);
     Status.setView(screen, camera);
   }
+  Status.resetView!.addEventListener("click", () => {
+    const screen: Screen = getScreen(canvas);
+    camera = zoomToMandelbrot(canvas);
+    localStorage.setItem("camera", JSON.stringify(camera));
+    Status.setView(screen, camera);
+    renderer.render(camera, screen, true);
+  });
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
     camera = zoomCamera(camera, screen, {
