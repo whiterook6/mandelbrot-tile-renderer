@@ -4,10 +4,6 @@ import { getWorldPosition } from "./camera";
 import type { RenderTileMessage, RenderedTileMessage } from "./messages";
 import { getTile } from "./tile";
 
-const scope = {
-  generation: 0,
-};
-
 // Escape iteration `i` when |z| > 4; interior uses `maxIterations`.
 const mandelbrotIterations = (
   worldX: number,
@@ -31,10 +27,6 @@ const mandelbrotIterations = (
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   const { camera, screen, tileIndex } = event.data;
-  if (camera.generation < scope.generation) {
-    return;
-  }
-  scope.generation = camera.generation;
   const tile = getTile(tileIndex, screen);
   const iterations = new Uint16Array(tile.width * tile.height);
   const maxIterations = Math.min(
