@@ -16,10 +16,25 @@
         width: 100%;
         height: 100%;
       }
+      #bottom-bar {
+        position: fixed;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: white;
+        border-radius: 8px;
+        padding: 0 8px;
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+      }
     </style>
   </head>
   <body>
     <canvas id="tile-canvas"></canvas>
+    <div id="bottom-bar"></div>
     <script type="module" src="/src/index.ts"></script>
   </body>
 </html>
