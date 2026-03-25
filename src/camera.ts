@@ -1,9 +1,12 @@
 import type { Screen } from "./tile";
 
-export type Camera = {
+export type CameraView = {
   worldX: number;
   worldY: number;
   zoom: number;
+};
+
+export type Camera = CameraView & {
   generation: number;
 };
 
@@ -21,50 +24,72 @@ export const initialCamera: Camera = {
   generation: 0,
 };
 
-export const panCamera = (
-  camera: Camera,
+export const cameraFromView = (
+  view: CameraView,
+  generation: number,
+): Camera => ({
+  ...view,
+  generation,
+});
+
+export const panView = (
+  view: CameraView,
   event: {
     movementX: number;
     movementY: number;
   },
-): Camera => {
-  const deltaX = event.movementX;
-  const deltaY = event.movementY;
-
+): CameraView => {
   return {
-    worldX: camera.worldX - deltaX / camera.zoom,
-    worldY: camera.worldY - deltaY / camera.zoom,
-    zoom: camera.zoom,
-    generation: camera.generation + 1,
+    worldX: view.worldX - event.movementX / view.zoom,
+    worldY: view.worldY - event.movementY / view.zoom,
+    zoom: view.zoom,
   };
 };
 
-export const zoomCamera = (
-  camera: Camera,
+export const zoomView = (
+  view: CameraView,
   screen: Screen,
   event: {
     cursorX: number;
     cursorY: number;
     deltaY: number;
   },
-): Camera => {
+): CameraView => {
   const k = 0.005;
   const zoomFactor = Math.exp(-event.deltaY * k);
-  const newZoom = camera.zoom * zoomFactor;
+  const newZoom = view.zoom * zoomFactor;
 
   return {
     worldX:
-      camera.worldX +
-      (event.cursorX - screen.width / 2) * (1 / camera.zoom - 1 / newZoom),
+      view.worldX +
+      (event.cursorX - screen.width / 2) * (1 / view.zoom - 1 / newZoom),
     worldY:
-      camera.worldY +
-      (event.cursorY - screen.height / 2) * (1 / camera.zoom - 1 / newZoom),
+      view.worldY +
+      (event.cursorY - screen.height / 2) * (1 / view.zoom - 1 / newZoom),
     zoom: newZoom,
-    generation: camera.generation + 1,
   };
 };
 
-export const getView = (camera: Camera, screen: Screen): View => {
+/**
+ * Sets ctx transform so that drawImage(source, 0, 0, w, h) maps source bitmap
+ * coordinates (correct for `from`) onto the canvas such that they align with `to`.
+ * Caller should save/restore around this and the drawImage call.
+ */
+export const applyWarpTransform = (
+  ctx: CanvasRenderingContext2D,
+  from: CameraView,
+  to: CameraView,
+  screen: Screen,
+): void => {
+  const w = screen.width;
+  const h = screen.height;
+  const s = to.zoom / from.zoom;
+  const e = (w / 2) * (1 - s) - (to.worldX - from.worldX) * to.zoom;
+  const f = (h / 2) * (1 - s) - (to.worldY - from.worldY) * to.zoom;
+  ctx.setTransform(s, 0, 0, s, e, f);
+};
+
+export const getView = (camera: CameraView, screen: Screen): View => {
   const worldPerPixel = 1 / camera.zoom;
   const worldWidth = screen.width * worldPerPixel;
   const worldHeight = screen.height * worldPerPixel;
@@ -77,7 +102,7 @@ export const getView = (camera: Camera, screen: Screen): View => {
 };
 
 export const getWorldPosition = (
-  camera: Camera,
+  camera: CameraView,
   screen: Screen,
   position: { screenX: number; screenY: number },
 ): { worldX: number; worldY: number } => {
@@ -90,7 +115,7 @@ export const getWorldPosition = (
 };
 
 export const getScreenPosition = (
-  camera: Camera,
+  camera: CameraView,
   screen: Screen,
   position: { worldX: number; worldY: number },
 ): { screenX: number; screenY: number } => {

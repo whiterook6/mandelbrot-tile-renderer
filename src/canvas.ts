@@ -15,16 +15,25 @@ export const getCanvas = (
   return { canvas, context };
 };
 
-export const fitCanvasToLayout = (canvas: HTMLCanvasElement) => {
+export const fitCanvasToLayout = (
+  canvas: HTMLCanvasElement,
+  onBufferResize?: () => void,
+) => {
   const dpr = window.devicePixelRatio || 1;
+  let isFirstLayout = true;
 
   const r = () => {
     const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
     const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-    if (canvas.width !== w || canvas.height !== h) {
+    const changed = canvas.width !== w || canvas.height !== h;
+    if (changed) {
       canvas.width = w;
       canvas.height = h;
+      if (onBufferResize !== undefined && !isFirstLayout) {
+        onBufferResize();
+      }
     }
+    isFirstLayout = false;
   };
 
   r();

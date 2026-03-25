@@ -1,8 +1,19 @@
-import { initialCamera, type Camera } from "./camera";
+import {
+  applyWarpTransform,
+  cameraFromView,
+  type Camera,
+  type CameraView,
+} from "./camera";
 import type { RenderedTileMessage } from "./messages";
 import type { Screen } from "./tile";
 
 const RENDER_DEBOUNCE_MS = 250;
+
+/** Canvas filter applied to warped stale content so fresh tiles read clearly on top. */
+const PREVIEW_COMMITTED_FILTER = "brightness(0.82) saturate(0.72)";
+
+const viewsNearlyEqual = (a: CameraView, b: CameraView): boolean =>
+  a.worldX === b.worldX && a.worldY === b.worldY && a.zoom === b.zoom;
 
 const iterationsToImageData = (
   iterations: Uint16Array,
@@ -45,10 +56,28 @@ const shuffleTileIndices = (count: number): number[] => {
 
 export class Renderer {
   private context: CanvasRenderingContext2D;
+  private committedCanvas: HTMLCanvasElement;
+  private committedContext: CanvasRenderingContext2D;
+  private progressCanvas: HTMLCanvasElement;
+  private progressContext: CanvasRenderingContext2D;
   private workers: Worker[] = [];
-  private camera: Camera = { ...initialCamera };
+  /** Camera (including generation) used for the active worker batch. */
+  private camera: Camera = { worldX: 0, worldY: 0, zoom: 1, generation: 0 };
+  private liveView: CameraView = { worldX: 0, worldY: 0, zoom: 1 };
+  private renderCameraView: CameraView = { worldX: 0, worldY: 0, zoom: 1 };
+  private committedCameraView: CameraView = { worldX: 0, worldY: 0, zoom: 1 };
+  private committedHasContent = false;
+  private renderInFlight = false;
+  private tilesRemaining = 0;
+  private renderGeneration = 0;
+  private screen: Screen = {
+    width: 1,
+    height: 1,
+    rowCount: 1,
+    columnCount: 1,
+  };
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private pendingCamera: Camera | null = null;
+  private pendingView: CameraView | null = null;
   private pendingScreen: Screen | null = null;
   private maxWorkerCount: number = Math.max(
     1,
@@ -57,11 +86,99 @@ export class Renderer {
 
   constructor(context: CanvasRenderingContext2D) {
     this.context = context;
+    this.committedCanvas = document.createElement("canvas");
+    const committedCtx = this.committedCanvas.getContext("2d");
+    if (!committedCtx) {
+      throw new Error("2D context unavailable for committed buffer");
+    }
+    this.committedContext = committedCtx;
+    this.progressCanvas = document.createElement("canvas");
+    const progressCtx = this.progressCanvas.getContext("2d", {
+      alpha: true,
+    });
+    if (!progressCtx) {
+      throw new Error("2D context unavailable for progress buffer");
+    }
+    this.progressContext = progressCtx;
   }
 
-  public render = (camera: Camera, screen: Screen, immediate = false) => {
-    this.pendingCamera = camera;
+  public resize = (screen: Screen) => {
+    if (
+      this.screen.width === screen.width &&
+      this.screen.height === screen.height
+    ) {
+      this.screen = screen;
+      return;
+    }
+
+    this.screen = screen;
+    this.committedCanvas.width = screen.width;
+    this.committedCanvas.height = screen.height;
+    this.progressCanvas.width = screen.width;
+    this.progressCanvas.height = screen.height;
+
+    this.workers.forEach((worker) => worker.terminate());
+    this.workers = [];
+    if (this.debounceTimer !== null) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+
+    this.committedHasContent = false;
+    this.renderInFlight = false;
+    this.tilesRemaining = 0;
+    this.pendingView = null;
+    this.pendingScreen = null;
+    this.renderGeneration += 1;
+    this.camera = {
+      ...this.camera,
+      generation: this.renderGeneration,
+    };
+  };
+
+  public setLiveView = (view: CameraView) => {
+    this.liveView = view;
+    this.paint();
+  };
+
+  public paint = () => {
+    const { context: ctx } = this;
+    const { screen } = this;
+    ctx.resetTransform();
+    ctx.clearRect(0, 0, screen.width, screen.height);
+
+    if (this.committedHasContent) {
+      const committedIsPreview =
+        this.renderInFlight ||
+        !viewsNearlyEqual(this.liveView, this.committedCameraView);
+      ctx.save();
+      applyWarpTransform(ctx, this.committedCameraView, this.liveView, screen);
+      if (committedIsPreview) {
+        ctx.filter = PREVIEW_COMMITTED_FILTER;
+      }
+      ctx.drawImage(this.committedCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    if (this.renderInFlight) {
+      ctx.save();
+      applyWarpTransform(ctx, this.renderCameraView, this.liveView, screen);
+      ctx.drawImage(this.progressCanvas, 0, 0);
+      ctx.restore();
+    }
+  };
+
+  /**
+   * Queues a tile render for `view` after debounce. Generation is assigned only when dispatch runs.
+   */
+  public scheduleTileRender = (
+    view: CameraView,
+    screen: Screen,
+    immediate = false,
+  ) => {
+    this.pendingView = { ...view };
     this.pendingScreen = screen;
+    this.screen = screen;
 
     if (immediate) {
       if (this.debounceTimer !== null) {
@@ -81,15 +198,35 @@ export class Renderer {
     }, RENDER_DEBOUNCE_MS);
   };
 
+  private finalizeBatch = () => {
+    this.committedContext.drawImage(this.progressCanvas, 0, 0);
+    this.committedCameraView = { ...this.renderCameraView };
+    this.committedHasContent = true;
+    this.progressContext.clearRect(0, 0, this.screen.width, this.screen.height);
+    this.renderInFlight = false;
+    this.tilesRemaining = 0;
+    this.paint();
+  };
+
   private dispatchRender = () => {
-    if (this.pendingCamera === null || this.pendingScreen === null) {
+    if (this.pendingView === null || this.pendingScreen === null) {
       return;
     }
-    const camera = this.pendingCamera;
+    const view = this.pendingView;
     const screen = this.pendingScreen;
 
+    this.renderGeneration += 1;
+    const camera = cameraFromView(view, this.renderGeneration);
     this.camera = camera;
+    this.renderCameraView = { ...view };
+
     const tileCount = screen.rowCount * screen.columnCount;
+    this.progressContext.clearRect(0, 0, screen.width, screen.height);
+    this.renderInFlight = true;
+    this.tilesRemaining = tileCount;
+
+    this.paint();
+
     const queue = shuffleTileIndices(tileCount);
     const poolSize = Math.min(this.maxWorkerCount, tileCount);
 
@@ -120,7 +257,6 @@ export class Renderer {
       worker.addEventListener(
         "message",
         (event: MessageEvent<RenderedTileMessage>) => {
-          console.log("received message", event.data);
           this.receiveTile(event.data);
           const nextIndex = queue.shift();
           if (nextIndex !== undefined) {
@@ -163,6 +299,11 @@ export class Renderer {
       tile.width,
       tile.height,
     );
-    this.context.putImageData(image, tile.x, tile.y);
+    this.progressContext.putImageData(image, tile.x, tile.y);
+    this.tilesRemaining -= 1;
+    this.paint();
+    if (this.tilesRemaining === 0) {
+      this.finalizeBatch();
+    }
   };
 }

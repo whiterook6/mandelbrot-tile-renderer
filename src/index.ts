@@ -1,4 +1,4 @@
-import { panCamera, zoomCamera, type Camera } from "./camera";
+import { panView, zoomView, type CameraView } from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import type { Screen } from "./tile";
@@ -7,28 +7,41 @@ const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
   const renderer = new Renderer(context);
 
-  const zoomToMandelbrot = (canvas: HTMLCanvasElement): Camera => {
+  const zoomToMandelbrot = (canvas: HTMLCanvasElement): CameraView => {
     return {
       worldX: -0.7436438870371587,
       worldY: 0,
       zoom: canvas.width / 3.5,
-      generation: 0,
     };
   };
 
-  fitCanvasToLayout(canvas);
+  let view: CameraView = {
+    worldX: 0,
+    worldY: 0,
+    zoom: 1,
+  };
+
+  const onBufferResize = () => {
+    const screen: Screen = getScreen(canvas);
+    renderer.resize(screen);
+    renderer.setLiveView(view);
+    renderer.scheduleTileRender(view, screen, true);
+  };
+
+  fitCanvasToLayout(canvas, onBufferResize);
+  view = zoomToMandelbrot(canvas);
   const devicePixelRatio = window.devicePixelRatio || 1;
 
-  let camera: Camera = zoomToMandelbrot(canvas);
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
-    camera = zoomCamera(camera, screen, {
+    view = zoomView(view, screen, {
       cursorX: event.clientX * devicePixelRatio,
       cursorY: event.clientY * devicePixelRatio,
       deltaY: event.deltaY,
     });
 
-    renderer.render(camera, screen);
+    renderer.setLiveView(view);
+    renderer.scheduleTileRender(view, screen);
   };
   window.addEventListener("wheel", handleWheel);
 
@@ -38,12 +51,13 @@ const main = () => {
     }
 
     const screen: Screen = getScreen(canvas);
-    camera = panCamera(camera, {
+    view = panView(view, {
       movementX: event.movementX * devicePixelRatio,
       movementY: event.movementY * devicePixelRatio,
     });
 
-    renderer.render(camera, screen);
+    renderer.setLiveView(view);
+    renderer.scheduleTileRender(view, screen);
   };
 
   let isDragging = false;
@@ -65,30 +79,33 @@ const main = () => {
     const screen: Screen = getScreen(canvas);
     switch (event.key) {
       case "Escape":
-        // reset the camera to the initial position
-        camera = zoomToMandelbrot(canvas);
-        renderer.render(camera, screen, true);
+        view = zoomToMandelbrot(canvas);
+        renderer.setLiveView(view);
+        renderer.scheduleTileRender(view, screen, true);
         break;
       case "+":
-        // zoom in around the center of the screen
-        camera = {
-          ...camera,
-          zoom: camera.zoom * 2,
+        view = {
+          ...view,
+          zoom: view.zoom * 2,
         };
-        renderer.render(camera, screen);
+        renderer.setLiveView(view);
+        renderer.scheduleTileRender(view, screen);
         break;
       case "-":
-        // zoom out around the center of the screen
-        camera = {
-          ...camera,
-          zoom: camera.zoom / 2,
+        view = {
+          ...view,
+          zoom: view.zoom / 2,
         };
-        renderer.render(camera, screen);
+        renderer.setLiveView(view);
+        renderer.scheduleTileRender(view, screen);
         break;
     }
   });
 
-  renderer.render(camera, getScreen(canvas), true);
+  const screen = getScreen(canvas);
+  renderer.resize(screen);
+  renderer.setLiveView(view);
+  renderer.scheduleTileRender(view, screen, true);
 };
 
 main();
