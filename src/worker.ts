@@ -25,34 +25,34 @@ const mandelbrotIterations = (
   return maxIterations;
 };
 
-const juliaIterations = (
-  worldX: number,
-  worldY: number,
-  maxIterations: number,
-): number => {
-  // z starts at the pixel
-  let zx = worldX;
-  let zy = worldY;
+// const juliaIterations = (
+//   worldX: number,
+//   worldY: number,
+//   maxIterations: number,
+// ): number => {
+//   // z starts at the pixel
+//   let zx = worldX;
+//   let zy = worldY;
 
-  // fixed constant c
-  const cx = -0.835;
-  const cy = 0.312;
+//   // fixed constant c
+//   const cx = -0.835;
+//   const cy = 0.312;
 
-  for (let i = 0; i < maxIterations; i++) {
-    const x2 = zx * zx;
-    const y2 = zy * zy;
+//   for (let i = 0; i < maxIterations; i++) {
+//     const x2 = zx * zx;
+//     const y2 = zy * zy;
 
-    if (x2 + y2 > 4) {
-      return i;
-    }
+//     if (x2 + y2 > 4) {
+//       return i;
+//     }
 
-    const tmp = x2 - y2 + cx;
-    zy = 2 * zx * zy + cy;
-    zx = tmp;
-  }
+//     const tmp = x2 - y2 + cx;
+//     zy = 2 * zx * zy + cy;
+//     zx = tmp;
+//   }
 
-  return maxIterations;
-};
+//   return maxIterations;
+// };
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   const { camera, screen, tileIndex } = event.data;
@@ -63,14 +63,19 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     Math.floor(64 + 24 * Math.log2(camera.zoom)),
   );
 
-  const {worldX: topLeftWorldX, worldY: topLeftWorldY} = getWorldPosition(camera, screen, {
-    screenX: tile.x + 0.5,
-    screenY: tile.y + 0.5,
-  });
-  const {worldX: bottomRightWorldX, worldY: bottomRightWorldY} = getWorldPosition(camera, screen, {
-    screenX: tile.x + tile.width + 0.5,
-    screenY: tile.y + tile.height + 0.5,
-  });
+  const { worldX: topLeftWorldX, worldY: topLeftWorldY } = getWorldPosition(
+    camera,
+    screen,
+    {
+      screenX: tile.x + 0.5,
+      screenY: tile.y + 0.5,
+    },
+  );
+  const { worldX: bottomRightWorldX, worldY: bottomRightWorldY } =
+    getWorldPosition(camera, screen, {
+      screenX: tile.x + tile.width + 0.5,
+      screenY: tile.y + tile.height + 0.5,
+    });
   const worldWidth = bottomRightWorldX - topLeftWorldX;
   const worldHeight = bottomRightWorldY - topLeftWorldY;
   const worldXStep = worldWidth / tile.width;

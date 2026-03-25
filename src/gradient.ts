@@ -1,11 +1,15 @@
 export type Gradient = (
-  inside: boolean, 
+  inside: boolean,
   iterationCount: number,
   maxIterations: number,
 ) => [number, number, number, number];
 
-export const simpleGradient: Gradient = (inside, iterationCount, maxIterations) => {
-  if (inside){
+export const simpleGradient: Gradient = (
+  inside,
+  iterationCount,
+  maxIterations,
+) => {
+  if (inside) {
     return [255, 255, 255, 255];
   }
   const brightness = Math.floor((255 * iterationCount) / maxIterations);
@@ -47,7 +51,11 @@ function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
 }
 
 /** Maps escape time to hue around the wheel (red → yellow → green → cyan → blue → magenta). */
-export const rainbowGradient: Gradient = (inside, iterationCount, maxIterations) => {
+export const rainbowGradient: Gradient = (
+  inside,
+  iterationCount,
+  maxIterations,
+) => {
   if (inside) {
     return [255, 255, 255, 255];
   }

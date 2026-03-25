@@ -7,10 +7,10 @@ export const Status = {
   viewY: document.getElementById("view-y"),
   viewZoom: document.getElementById("view-zoom"),
   resetView: document.getElementById("reset-view"),
-    
-  setView: (screen: Screen, camera: Camera) => {
+
+  setView: (camera: Camera, screen: Screen) => {
     Status.viewX!.textContent = `${camera.worldX}`;
     Status.viewY!.textContent = `${camera.worldY}`;
     Status.viewZoom!.textContent = `${screen.width / camera.zoom}`;
   },
-}
+};

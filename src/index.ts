@@ -7,7 +7,7 @@ import type { Screen } from "./tile";
 const getInitialCamera = (fallback: Camera) => {
   const fromLocalStorage = localStorage.getItem("camera");
   try {
-    if (fromLocalStorage){
+    if (fromLocalStorage) {
       return JSON.parse(fromLocalStorage);
     }
   } catch (error) {
@@ -15,11 +15,18 @@ const getInitialCamera = (fallback: Camera) => {
     localStorage.setItem("camera", JSON.stringify(fallback));
   }
   return fallback;
-}
+};
 
 const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
   const renderer = new Renderer(context);
+
+  const setView = (camera: Camera) => {
+    const screen: Screen = getScreen(canvas);
+    Status.setView(camera, screen);
+    localStorage.setItem("camera", JSON.stringify(camera));
+    renderer.render(camera, screen);
+  };
 
   const zoomToMandelbrot = (canvas: HTMLCanvasElement): Camera => {
     return {
@@ -31,30 +38,21 @@ const main = () => {
   };
 
   fitCanvasToLayout(canvas);
-  const devicePixelRatio = window.devicePixelRatio || 1;
-
   let camera: Camera = getInitialCamera(zoomToMandelbrot(canvas));
-  {
-    const screen: Screen = getScreen(canvas);
-    Status.setView(screen, camera);
-  }
+
   Status.resetView!.addEventListener("click", () => {
-    const screen: Screen = getScreen(canvas);
     camera = zoomToMandelbrot(canvas);
-    localStorage.setItem("camera", JSON.stringify(camera));
-    Status.setView(screen, camera);
-    renderer.render(camera, screen, true);
+    setView(camera);
   });
   const handleWheel = (event: WheelEvent) => {
+    const devicePixelRatio = window.devicePixelRatio || 1;
     const screen: Screen = getScreen(canvas);
     camera = zoomCamera(camera, screen, {
       cursorX: event.clientX * devicePixelRatio,
       cursorY: event.clientY * devicePixelRatio,
       deltaY: event.deltaY,
     });
-    localStorage.setItem("camera", JSON.stringify(camera));
-    Status.setView(screen, camera);
-    renderer.render(camera, screen);
+    setView(camera);
   };
   window.addEventListener("wheel", handleWheel);
 
@@ -63,15 +61,12 @@ const main = () => {
       return;
     }
 
-    const screen: Screen = getScreen(canvas);
     camera = panCamera(camera, {
       movementX: event.movementX * devicePixelRatio,
       movementY: event.movementY * devicePixelRatio,
     });
 
-    localStorage.setItem("camera", JSON.stringify(camera));
-    Status.setView(screen, camera);
-    renderer.render(camera, screen);
+    setView(camera);
   };
 
   let isDragging = false;
@@ -90,14 +85,11 @@ const main = () => {
   window.addEventListener("mousedown", handleMouseDown);
 
   window.addEventListener("keydown", (event) => {
-    const screen: Screen = getScreen(canvas);
     switch (event.key) {
       case "Escape":
         // reset the camera to the initial position
         camera = zoomToMandelbrot(canvas);
-        localStorage.setItem("camera", JSON.stringify(camera));
-        Status.setView(screen, camera);
-        renderer.render(camera, screen, true);
+        setView(camera);
         break;
       case "+":
         // zoom in around the center of the screen
@@ -105,9 +97,7 @@ const main = () => {
           ...camera,
           zoom: camera.zoom * 2,
         };
-        localStorage.setItem("camera", JSON.stringify(camera));
-        Status.setView(screen, camera);
-        renderer.render(camera, screen);
+        setView(camera);
         break;
       case "-":
         // zoom out around the center of the screen
@@ -115,14 +105,12 @@ const main = () => {
           ...camera,
           zoom: camera.zoom / 2,
         };
-        localStorage.setItem("camera", JSON.stringify(camera));
-        Status.setView(screen, camera);
-        renderer.render(camera, screen);
+        setView(camera);
         break;
     }
   });
 
-  renderer.render(camera, getScreen(canvas), true);
+  setView(camera);
 };
 
 main();

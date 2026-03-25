@@ -53,23 +53,36 @@ export class Renderer {
   constructor(context: CanvasRenderingContext2D) {
     this.context = context;
     this.workers = Array.from({ length: this.maxWorkerCount }, () => {
-      const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+      const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+      });
       worker.addEventListener("error", (event) => {
-        console.error("tile worker error", event.message, event.filename, event.lineno);
+        console.error(
+          "tile worker error",
+          event.message,
+          event.filename,
+          event.lineno,
+        );
       });
       worker.addEventListener("messageerror", (event) => {
-        console.error("tile worker message could not be deserialized", event.data);
+        console.error(
+          "tile worker message could not be deserialized",
+          event.data,
+        );
       });
 
-      worker.addEventListener("message", (event: MessageEvent<RenderedTileMessage>) => {
-        this.receiveTile(event.data);
-        if (this.workQueue.length > 0){
-          const nextMessage = this.workQueue.shift();
-          if (nextMessage !== undefined){
-            worker.postMessage(nextMessage);
+      worker.addEventListener(
+        "message",
+        (event: MessageEvent<RenderedTileMessage>) => {
+          this.receiveTile(event.data);
+          if (this.workQueue.length > 0) {
+            const nextMessage = this.workQueue.shift();
+            if (nextMessage !== undefined) {
+              worker.postMessage(nextMessage);
+            }
           }
-        }
-      });
+        },
+      );
       return worker;
     });
     this.workQueue = [];
@@ -106,17 +119,17 @@ export class Renderer {
 
     this.camera = camera;
     const tileCount = screen.rowCount * screen.columnCount;
-    this.workQueue = shuffleTileIndices(tileCount).map(index => ({
+    this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
       type: "requestTile",
       camera,
       screen,
       tileIndex: index,
     }));
 
-    this.workers.forEach(worker => {
-      if (this.workQueue.length > 0){
+    this.workers.forEach((worker) => {
+      if (this.workQueue.length > 0) {
         const nextMessage = this.workQueue.shift();
-        if (nextMessage !== undefined){
+        if (nextMessage !== undefined) {
           worker.postMessage(nextMessage);
         }
       }
