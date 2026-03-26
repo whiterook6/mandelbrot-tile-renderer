@@ -1,6 +1,7 @@
 import { initialCamera, type Camera } from "./camera";
 import { rainbowGradient } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
+import { Status } from "./status";
 import type { Screen } from "./tile";
 
 const RENDER_DEBOUNCE_MS = 125;
@@ -75,11 +76,9 @@ export class Renderer {
         "message",
         (event: MessageEvent<RenderedTileMessage>) => {
           this.receiveTile(event.data);
-          if (this.workQueue.length > 0) {
-            const nextMessage = this.workQueue.shift();
-            if (nextMessage !== undefined) {
-              worker.postMessage(nextMessage);
-            }
+          const nextMessage = this.dequeueTile();
+          if (nextMessage !== undefined) {
+            worker.postMessage(nextMessage);
           }
         },
       );
@@ -119,6 +118,7 @@ export class Renderer {
 
     this.camera = camera;
     const tileCount = screen.rowCount * screen.columnCount;
+    Status.progress!.textContent = `${tileCount}`;
     this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
       type: "requestTile",
       camera,
@@ -127,16 +127,23 @@ export class Renderer {
     }));
 
     this.workers.forEach((worker) => {
-      if (this.workQueue.length > 0) {
-        const nextMessage = this.workQueue.shift();
-        if (nextMessage !== undefined) {
-          worker.postMessage(nextMessage);
-        }
+      const nextMessage = this.dequeueTile();
+      if (nextMessage !== undefined) {
+        worker.postMessage(nextMessage);
       }
     });
   };
 
-  public receiveTile = (message: RenderedTileMessage) => {
+  private dequeueTile = () => {
+    const nextMessage = this.workQueue.shift();
+    if (nextMessage !== undefined) {
+      Status.progress!.textContent = `${this.workQueue.length}`;
+      return nextMessage;
+    }
+    return undefined;
+  };
+
+  private receiveTile = (message: RenderedTileMessage) => {
     const { generation, iterations, maxIterations, tile } = message;
     if (generation !== this.camera.generation) {
       return;

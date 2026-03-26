@@ -132,5 +132,5 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     maxIterations,
     tile,
   };
-  self.postMessage(response);
+  self.postMessage(response, { transfer: [iterations.buffer] });
 });

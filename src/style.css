@@ -37,13 +37,13 @@ body {
     rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
 }
 
-#bottom-bar #view-controls, #bottom-bar #action-controls {
+#bottom-bar > * {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
-#bottom-bar #view-controls > *, #bottom-bar #action-controls > * {
+#bottom-bar * > * {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -83,4 +83,9 @@ body {
   margin: 0;
   border: none;
   font-weight: 600;
+}
+
+#bottom-bar #progress span {
+  background-color: #ae00ff;
+  color: white;
 }

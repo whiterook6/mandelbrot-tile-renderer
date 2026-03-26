@@ -53,16 +53,12 @@ function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
 /** Maps escape time to hue around the wheel (red → yellow → green → cyan → blue → magenta). */
 export const rainbowGradient: Gradient = (
   inside,
-  iterationCount,
-  maxIterations,
+  iterationCount
 ) => {
   if (inside) {
     return [255, 255, 255, 255];
   }
-  if (maxIterations <= 0) {
-    return [0, 0, 0, 255];
-  }
-  const hue = (360 * iterationCount) / maxIterations;
+  const hue = iterationCount % 360;
   const [r, g, b] = hsvToRgb(hue, 1, 1);
   return [r, g, b, 255];
 };
