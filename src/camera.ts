@@ -110,10 +110,7 @@ export class CameraController {
   }
 
   zoomCamera(
-    screen: {
-      width: number;
-      height: number;
-    },
+    screen: Screen,
     event: {
       cursorX: number;
       cursorY: number;

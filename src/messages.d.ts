@@ -1,5 +1,4 @@
 import type { Screen, Tile } from "./tile";
-import type { Camera } from "./camera.ts.old";
 
 export type RenderTileMessage = {
   type: "requestTile";

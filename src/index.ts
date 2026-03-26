@@ -41,6 +41,7 @@ const main = () => {
   const setView = () => {
     const screen: Screen = getScreen(canvas);
     const camera = cameraController.getCamera();
+    cameraController.saveCamera();
     Status.setView(camera, screen);
     renderer.render(camera, screen);
   };
