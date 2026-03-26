@@ -3,6 +3,15 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #tile-canvas {
@@ -28,13 +37,13 @@ body {
     rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
 }
 
-#bottom-bar #view-controls {
+#bottom-bar #view-controls, #bottom-bar #action-controls {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
-#bottom-bar #view-controls > * {
+#bottom-bar #view-controls > *, #bottom-bar #action-controls > * {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -58,7 +67,20 @@ body {
   color: white;
   cursor: pointer;
   margin: 0;
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  border: none;
+  font-weight: 600;
+}
+
+#bottom-bar #action-controls span {
+  background-color: #0010ff;
+  color: white;
+}
+
+#bottom-bar #action-controls button {
+  background-color: #0010ff;
+  color: white;
+  cursor: pointer;
+  margin: 0;
+  border: none;
   font-weight: 600;
 }

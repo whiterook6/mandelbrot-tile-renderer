@@ -86,10 +86,42 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
 
   for (let y = 0; y < tile.height; y++) {
     for (let x = 0; x < tile.width; x++) {
-      const worldX = origin.worldX + x * dx.worldX + y * dy.worldX;
-      const worldY = origin.worldY + x * dx.worldY + y * dy.worldY;
       const i = y * tile.width + x;
-      iterations[i] = mandelbrotIterations(worldX, worldY, maxIterations);
+      let iterationAverage = 0;
+      {
+        // top left
+        const tlX = x - 0.5
+        const tlY = y - 0.5
+        const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
+        const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
+        iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
+      }
+      {
+        // top right
+        const trX = x + 0.5
+        const trY = y - 0.5
+        const worldX = origin.worldX + trX * dx.worldX + trY * dy.worldX;
+        const worldY = origin.worldY + trX * dx.worldY + trY * dy.worldY;
+        iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
+      }
+      {
+        // bottom left
+        const tlX = x - 0.5
+        const tlY = y + 0.5
+        const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
+        const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
+        iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
+      }
+      {
+        // bottom right
+        const brX = x + 0.5
+        const brY = y + 0.5
+        const worldX = origin.worldX + brX * dx.worldX + brY * dy.worldX;
+        const worldY = origin.worldY + brX * dx.worldY + brY * dy.worldY;
+        iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
+      }
+
+      iterations[i] = iterationAverage / 4;
     }
   }
 

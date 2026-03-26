@@ -8,6 +8,7 @@ export const Status = {
   viewZoom: document.getElementById("view-zoom"),
   viewRotation: document.getElementById("view-rotation"),
   resetView: document.getElementById("reset-view"),
+  takeSnapshot: document.getElementById("take-snapshot"),
 
   setView: (camera: Camera, screen: Screen) => {
     Status.viewX!.textContent = `${camera.worldX}`;

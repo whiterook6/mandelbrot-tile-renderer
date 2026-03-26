@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tile-renderer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -14,7 +20,10 @@
         <span id="view-y"></span>
         <span id="view-zoom"></span>
         <span id="view-rotation"></span>
-        <button id="reset-view">Home</button>
+        <button id="reset-view">&gt; Home &lt;</button>
+      </div>
+      <div id="action-controls">
+        <button id="take-snapshot">&gt; Snapshot &lt;</button>
       </div>
     </div>
     <script type="module" src="/src/index.ts"></script>

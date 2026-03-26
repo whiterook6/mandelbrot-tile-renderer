@@ -57,6 +57,18 @@ const main = () => {
     setView(camera);
   });
 
+  Status.takeSnapshot!.addEventListener("click", () => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "snapshot.png";
+        a.click();
+      }
+    });
+  })
+
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
     const { x: cursorX, y: cursorY } = canvasCoordsFromEvent(event);
