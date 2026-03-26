@@ -1,4 +1,4 @@
-import { initialCamera, type Camera } from "./camera";
+import { CameraController, type Camera } from "./camera";
 import { rainbowGradient } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { Status } from "./status";
@@ -42,7 +42,7 @@ export class Renderer {
   private context: CanvasRenderingContext2D;
   private workers: Worker[];
   private workQueue: Array<RenderTileMessage>;
-  private camera: Camera = { ...initialCamera };
+  private camera: Camera = CameraController.initialCamera;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingCamera: Camera | null = null;
   private pendingScreen: Screen | null = null;

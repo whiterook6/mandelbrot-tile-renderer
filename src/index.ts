@@ -1,11 +1,4 @@
-import {
-  panCamera,
-  twistCamera,
-  zoomCamera,
-  type Camera,
-  loadCamera,
-  saveCamera,
-} from "./camera";
+import { CameraController, type Camera } from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
@@ -13,7 +6,7 @@ import type { Screen } from "./tile";
 
 const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
-  const renderer = new Renderer(context);
+  fitCanvasToLayout(canvas);
 
   const canvasCoordsFromEvent = (event: MouseEvent) => {
     const rect = canvas.getBoundingClientRect();
@@ -32,13 +25,6 @@ const main = () => {
     };
   };
 
-  const setView = (camera: Camera) => {
-    const screen: Screen = getScreen(canvas);
-    Status.setView(camera, screen);
-    saveCamera(camera);
-    renderer.render(camera, screen);
-  };
-
   const zoomToMandelbrot = (canvasEl: HTMLCanvasElement): Camera => {
     return {
       worldX: -0.7436438870371587,
@@ -48,13 +34,21 @@ const main = () => {
       generation: 0,
     };
   };
+  const cameraController = new CameraController(zoomToMandelbrot(canvas));
+  cameraController.loadCamera(); // load camera from localStorage if set
 
-  fitCanvasToLayout(canvas);
-  let camera: Camera = loadCamera(zoomToMandelbrot(canvas));
+  const renderer = new Renderer(context);
+  const setView = () => {
+    const screen: Screen = getScreen(canvas);
+    const camera = cameraController.getCamera();
+    cameraController.saveCamera();
+    Status.setView(camera, screen);
+    renderer.render(camera, screen);
+  };
 
   Status.resetView!.addEventListener("click", () => {
-    camera = zoomToMandelbrot(canvas);
-    setView(camera);
+    cameraController.setCamera(zoomToMandelbrot(canvas));
+    setView();
   });
 
   Status.takeSnapshot!.addEventListener("click", () => {
@@ -67,17 +61,17 @@ const main = () => {
         a.click();
       }
     });
-  })
+  });
 
   const handleWheel = (event: WheelEvent) => {
     const screen: Screen = getScreen(canvas);
     const { x: cursorX, y: cursorY } = canvasCoordsFromEvent(event);
-    camera = zoomCamera(camera, screen, {
+    cameraController.zoomCamera(screen, {
       cursorX,
       cursorY,
       deltaY: event.deltaY,
     });
-    setView(camera);
+    setView();
   };
   window.addEventListener("wheel", handleWheel);
 
@@ -90,8 +84,8 @@ const main = () => {
       return;
     }
     const { movementX, movementY } = movementInCanvasPixels(event);
-    camera = panCamera(camera, { movementX, movementY });
-    setView(camera);
+    cameraController.panCamera({ movementX, movementY });
+    setView();
   };
 
   const handlePanMouseUp = () => {
@@ -120,8 +114,8 @@ const main = () => {
       x: x - screen.width / 2,
       y: y - screen.height / 2,
     };
-    camera = twistCamera(camera, twistVPrev, vCurr);
-    setView(camera);
+    cameraController.twistCamera(twistVPrev, vCurr);
+    setView();
     twistVPrev = vCurr;
   };
 
@@ -154,31 +148,32 @@ const main = () => {
   });
 
   window.addEventListener("keydown", (event) => {
+    const screen: Screen = getScreen(canvas);
     switch (event.key) {
       case "Escape":
-        camera = zoomToMandelbrot(canvas);
-        setView(camera);
+        cameraController.setCamera(zoomToMandelbrot(canvas));
+        setView();
         break;
       case "+":
-        camera = {
-          ...camera,
-          zoom: camera.zoom * 2,
-          generation: camera.generation + 1,
-        };
-        setView(camera);
+        cameraController.zoomCamera(screen, {
+          cursorX: screen.width / 2,
+          cursorY: screen.height / 2,
+          deltaY: 1,
+        });
+        setView();
         break;
       case "-":
-        camera = {
-          ...camera,
-          zoom: camera.zoom / 2,
-          generation: camera.generation + 1,
-        };
-        setView(camera);
+        cameraController.zoomCamera(screen, {
+          cursorX: screen.width / 2,
+          cursorY: screen.height / 2,
+          deltaY: -1,
+        });
+        setView();
         break;
     }
   });
 
-  setView(camera);
+  setView();
 };
 
 main();

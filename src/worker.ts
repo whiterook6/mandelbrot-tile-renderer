@@ -1,6 +1,6 @@
 /* global self */
 
-import { getWorldPosition } from "./camera";
+import { CameraController } from "./camera";
 import type { RenderTileMessage, RenderedTileMessage } from "./messages";
 import { getTile } from "./tile";
 
@@ -63,15 +63,19 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     Math.floor(64 + 24 * Math.log2(camera.zoom)),
   );
 
-  const origin = getWorldPosition(camera, screen, {
+  const cameraController = new CameraController(camera);
+  const origin = cameraController.getWorldPosition(screen, {
     screenX: tile.x + 0.5,
     screenY: tile.y + 0.5,
   });
-  const right = getWorldPosition(camera, screen, {
+
+  // build a "basis matrix" aka delta-right and delta-down vectors
+  // to make looping simpler
+  const right = cameraController.getWorldPosition(screen, {
     screenX: tile.x + 1.5,
     screenY: tile.y + 0.5,
   });
-  const down = getWorldPosition(camera, screen, {
+  const down = cameraController.getWorldPosition(screen, {
     screenX: tile.x + 0.5,
     screenY: tile.y + 1.5,
   });
@@ -90,32 +94,32 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
       let iterationAverage = 0;
       {
         // top left
-        const tlX = x - 0.5
-        const tlY = y - 0.5
+        const tlX = x - 0.5;
+        const tlY = y - 0.5;
         const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
         const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
         iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
       }
       {
         // top right
-        const trX = x + 0.5
-        const trY = y - 0.5
+        const trX = x + 0.5;
+        const trY = y - 0.5;
         const worldX = origin.worldX + trX * dx.worldX + trY * dy.worldX;
         const worldY = origin.worldY + trX * dx.worldY + trY * dy.worldY;
         iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
       }
       {
         // bottom left
-        const tlX = x - 0.5
-        const tlY = y + 0.5
+        const tlX = x - 0.5;
+        const tlY = y + 0.5;
         const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
         const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
         iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
       }
       {
         // bottom right
-        const brX = x + 0.5
-        const brY = y + 0.5
+        const brX = x + 0.5;
+        const brY = y + 0.5;
         const worldX = origin.worldX + brX * dx.worldX + brY * dy.worldX;
         const worldY = origin.worldY + brX * dx.worldY + brY * dy.worldY;
         iterationAverage += mandelbrotIterations(worldX, worldY, maxIterations);
