@@ -1,12 +1,42 @@
 import type { Screen } from "./tile";
 
 export type Camera = {
+  /** World position of the center of the screen. */
   worldX: number;
   worldY: number;
+
+  /** Zoom level. Larger number means larger features. */
   zoom: number;
+
   /** Counter-clockwise rotation of the view on screen, radians. */
   rotation: number;
+
+  /** Incrementing counter to invalidate cached tiles. */
   generation: number;
+};
+
+export const loadCamera = (fallback: Camera) => {
+  if (!localStorage.getItem("camera")) {
+    return fallback;
+  }
+
+  let fromLocalStorage;
+  try {
+    fromLocalStorage = JSON.parse(localStorage.getItem("camera")!);
+  } catch (error) {
+    console.error("Error parsing camera from localStorage", error);
+    return fallback;
+  }
+
+  return {
+    ...fallback,
+    ...fromLocalStorage,
+    generation: 0,
+  };
+};
+
+export const saveCamera = (camera: Camera) => {
+  localStorage.setItem("camera", JSON.stringify(camera));
 };
 
 export const initialCamera: Camera = {
@@ -17,18 +47,14 @@ export const initialCamera: Camera = {
   generation: 0,
 };
 
-const cosSin = (rotation: number) => ({
-  cos: Math.cos(rotation),
-  sin: Math.sin(rotation),
-});
-
 /** Screen offset from pivot → world offset from camera (before adding camera). */
-export const screenOffsetToWorldDelta = (
+const screenOffsetToWorldDelta = (
   camera: Camera,
   screenDx: number,
   screenDy: number,
 ): { worldX: number; worldY: number } => {
-  const { cos, sin } = cosSin(camera.rotation);
+  const cos = Math.cos(camera.rotation);
+  const sin = Math.sin(camera.rotation);
   const invZ = 1 / camera.zoom;
   return {
     worldX: (screenDx * cos + screenDy * sin) * invZ,
@@ -73,7 +99,8 @@ export const zoomCamera = (
   const dx = event.cursorX - screen.width / 2;
   const dy = event.cursorY - screen.height / 2;
   const scale = 1 / camera.zoom - 1 / newZoom;
-  const { cos, sin } = cosSin(camera.rotation);
+  const cos = Math.cos(camera.rotation);
+  const sin = Math.sin(camera.rotation);
 
   return {
     ...camera,
@@ -84,13 +111,12 @@ export const zoomCamera = (
   };
 };
 
-const TWIST_EPS = 1e-3;
-
 export const twistCamera = (
   camera: Camera,
   vPrev: { x: number; y: number },
   vCurr: { x: number; y: number },
 ): Camera => {
+  const TWIST_EPS = 1e-3;
   const lenPrev = Math.hypot(vPrev.x, vPrev.y);
   const lenCurr = Math.hypot(vCurr.x, vCurr.y);
   if (lenPrev < TWIST_EPS || lenCurr < TWIST_EPS) {
@@ -104,36 +130,6 @@ export const twistCamera = (
     ...camera,
     rotation: camera.rotation + delta,
     generation: camera.generation + 1,
-  };
-};
-
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-export const mergeCamera = (fallback: Camera, stored: unknown): Camera => {
-  if (!isPlainObject(stored)) {
-    return { ...fallback, generation: 0 };
-  }
-
-  const pick = (key: keyof Camera): number => {
-    const v = stored[key];
-    if (typeof v === "number" && Number.isFinite(v)) {
-      return v;
-    }
-    return fallback[key];
-  };
-
-  let zoom = pick("zoom");
-  if (zoom <= 0) {
-    zoom = fallback.zoom;
-  }
-
-  return {
-    worldX: pick("worldX"),
-    worldY: pick("worldY"),
-    zoom,
-    rotation: pick("rotation"),
-    generation: 0,
   };
 };
 
@@ -158,7 +154,8 @@ export const getScreenPosition = (
 ): { screenX: number; screenY: number } => {
   const wx = position.worldX - camera.worldX;
   const wy = position.worldY - camera.worldY;
-  const { cos, sin } = cosSin(camera.rotation);
+  const cos = Math.cos(camera.rotation);
+  const sin = Math.sin(camera.rotation);
   const dx = (wx * cos - wy * sin) * camera.zoom;
   const dy = (wx * sin + wy * cos) * camera.zoom;
   return {

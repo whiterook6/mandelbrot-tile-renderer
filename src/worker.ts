@@ -75,8 +75,14 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     screenX: tile.x + 0.5,
     screenY: tile.y + 1.5,
   });
-  const dx = { worldX: right.worldX - origin.worldX, worldY: right.worldY - origin.worldY };
-  const dy = { worldX: down.worldX - origin.worldX, worldY: down.worldY - origin.worldY };
+  const dx = {
+    worldX: right.worldX - origin.worldX,
+    worldY: right.worldY - origin.worldY,
+  };
+  const dy = {
+    worldX: down.worldX - origin.worldX,
+    worldY: down.worldY - origin.worldY,
+  };
 
   for (let y = 0; y < tile.height; y++) {
     for (let x = 0; x < tile.width; x++) {

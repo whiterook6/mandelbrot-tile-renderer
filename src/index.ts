@@ -1,27 +1,15 @@
 import {
-  mergeCamera,
   panCamera,
   twistCamera,
   zoomCamera,
   type Camera,
+  loadCamera,
+  saveCamera,
 } from "./camera";
 import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
-
-const getInitialCamera = (fallback: Camera): Camera => {
-  const fromLocalStorage = localStorage.getItem("camera");
-  try {
-    if (fromLocalStorage) {
-      return mergeCamera(fallback, JSON.parse(fromLocalStorage));
-    }
-  } catch (error) {
-    console.error("Error parsing camera from localStorage", error);
-    localStorage.setItem("camera", JSON.stringify(fallback));
-  }
-  return mergeCamera(fallback, null);
-};
 
 const main = () => {
   const { canvas, context } = getCanvas("tile-canvas");
@@ -47,7 +35,7 @@ const main = () => {
   const setView = (camera: Camera) => {
     const screen: Screen = getScreen(canvas);
     Status.setView(camera, screen);
-    localStorage.setItem("camera", JSON.stringify(camera));
+    saveCamera(camera);
     renderer.render(camera, screen);
   };
 
@@ -62,7 +50,7 @@ const main = () => {
   };
 
   fitCanvasToLayout(canvas);
-  let camera: Camera = getInitialCamera(zoomToMandelbrot(canvas));
+  let camera: Camera = loadCamera(zoomToMandelbrot(canvas));
 
   Status.resetView!.addEventListener("click", () => {
     camera = zoomToMandelbrot(canvas);
@@ -120,11 +108,8 @@ const main = () => {
       x: x - screen.width / 2,
       y: y - screen.height / 2,
     };
-    const next = twistCamera(camera, twistVPrev, vCurr);
-    if (next !== null) {
-      camera = next;
-      setView(camera);
-    }
+    camera = twistCamera(camera, twistVPrev, vCurr);
+    setView(camera);
     twistVPrev = vCurr;
   };
 
