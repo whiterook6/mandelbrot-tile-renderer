@@ -61,6 +61,22 @@ const gradients: Gradient[] = [{
   }
 }]
 
+/** Samples escape-time colors with the same fn as the renderer (outside points only). */
+const PREVIEW_STEPS = 256;
+
+const rgbaToCss = ([r, g, b, a]: [number, number, number, number]): string =>
+  `rgba(${r},${g},${b},${a / 255})`;
+
+export function gradientPreviewBackground(gradient: Gradient): string {
+  const max = PREVIEW_STEPS;
+  const parts: string[] = [];
+  for (let i = 0; i < max; i++) {
+    const pct = (i / (max - 1)) * 100;
+    parts.push(`${rgbaToCss(gradient.fn(false, i, max))} ${pct}%`);
+  }
+  return `linear-gradient(to right, ${parts.join(", ")})`;
+}
+
 export const GradientController = {
   selector: document.getElementById("gradient-select") as HTMLSelectElement,
   preview: document.getElementById("gradient-preview") as HTMLDivElement,
@@ -70,7 +86,13 @@ export const GradientController = {
     const gradient = gradients.find(g => g.label === label);
     if (gradient) {
       GradientController.currentGradient = gradient;
+      GradientController.applyPreviewGradient();
     }
+  },
+  applyPreviewGradient: () => {
+    GradientController.preview.style.background = gradientPreviewBackground(
+      GradientController.currentGradient,
+    );
   },
   init: (renderer: Renderer) => {
     GradientController.selector.innerHTML = "";
@@ -80,6 +102,8 @@ export const GradientController = {
       option.textContent = gradient.label;
       GradientController.selector.appendChild(option);
     });
+    GradientController.selector.value = GradientController.currentGradient.label;
+    GradientController.applyPreviewGradient();
     GradientController.selector.onchange = () => {
       if (GradientController.currentGradient.label === GradientController.selector.value) {
         return;

@@ -11,8 +11,8 @@ export type RenderedTileMessage = {
   type: "respondTile";
 
   generation: number;
-  /** Escape iteration per pixel; interior pixels use `maxIterations`. */
-  iterations: Uint16Array;
+  /** Smooth escape time per pixel (`Float32Array`); interior pixels use `maxIterations`. */
+  iterations: Float32Array;
   maxIterations: number;
   tile: Tile;
 };

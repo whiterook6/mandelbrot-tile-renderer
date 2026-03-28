@@ -7,7 +7,7 @@ import type { Screen } from "./tile";
 const RENDER_DEBOUNCE_MS = 125;
 
 const iterationsToImageData = (
-  iterations: Uint16Array,
+  iterations: Float32Array,
   maxIterations: number,
   width: number,
   height: number,
@@ -18,7 +18,8 @@ const iterationsToImageData = (
   for (let i = 0; i < n; i++) {
     const iter = iterations[i]!;
     const o = i * 4;
-    const pixel = GradientController.currentGradient.fn(iter === maxIterations, iter, maxIterations);
+    const inside = iter >= maxIterations;
+    const pixel = GradientController.currentGradient.fn(inside, iter, maxIterations);
     out[o] = pixel[0];
     out[o + 1] = pixel[1];
     out[o + 2] = pixel[2];

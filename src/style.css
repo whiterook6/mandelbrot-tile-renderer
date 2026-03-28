@@ -162,15 +162,6 @@ body {
   border-radius: 4px;
   border: 1px solid transparent;
   box-sizing: border-box;
-  /* Same hue sweep as rainbowGradient (full saturation, V = 1) */
-  background: linear-gradient(
-    to right,
-    hsl(0deg 100% 50%),
-    hsl(60deg 100% 50%),
-    hsl(120deg 100% 50%),
-    hsl(180deg 100% 50%),
-    hsl(240deg 100% 50%),
-    hsl(300deg 100% 50%),
-    hsl(360deg 100% 50%)
-  );
+  /* Filled by GradientController.applyPreviewGradient() */
+  background: #e5e5e5;
 }
