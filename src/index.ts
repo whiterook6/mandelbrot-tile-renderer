@@ -3,8 +3,24 @@ import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
+import { Camera as CameraIcon, createElement, Home } from "lucide";
+
+const setButtonWithIcon = (
+  button: HTMLButtonElement,
+  icon: Parameters<typeof createElement>[0],
+  label: string,
+) => {
+  button.replaceChildren();
+  const svg = createElement(icon, { size: 20, "aria-hidden": "true" });
+  svg.classList.add("button-icon");
+  const text = document.createElement("span");
+  text.textContent = label;
+  button.append(svg, text);
+};
 
 const main = () => {
+  setButtonWithIcon(Status.resetView as HTMLButtonElement, Home, "Home");
+  setButtonWithIcon(Status.takeSnapshot as HTMLButtonElement, CameraIcon, "Snapshot");
   const { canvas, context } = getCanvas("tile-canvas");
   fitCanvasToLayout(canvas);
 

@@ -43,7 +43,8 @@ body {
   gap: 2px;
 }
 
-#bottom-bar * > * {
+/* Only style direct children of each bar section — not icon/label inside buttons */
+#bottom-bar > div > * {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -63,6 +64,9 @@ body {
 }
 
 #bottom-bar #view-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background-color: #00cbff;
   color: white;
   cursor: pointer;
@@ -77,12 +81,22 @@ body {
 }
 
 #bottom-bar #action-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background-color: #0010ff;
   color: white;
   cursor: pointer;
   margin: 0;
   border: none;
   font-weight: 600;
+}
+
+#bottom-bar button .button-icon {
+  flex-shrink: 0;
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 
 #bottom-bar #progress span {

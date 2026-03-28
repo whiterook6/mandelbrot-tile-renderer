@@ -1144,6 +1144,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lucide@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "lucide@npm:1.7.0"
+  checksum: 10c0/255e26c629df4a43a360c528102e179011ed045f593354b7390fd93261577c091749bbf98f640932d37357096f75fe48ecb7231df742d0a9faffe54cb6a2b90b
+  languageName: node
+  linkType: hard
+
 "make-fetch-happen@npm:^15.0.0":
   version: 15.0.5
   resolution: "make-fetch-happen@npm:15.0.5"
@@ -1582,6 +1589,7 @@ __metadata:
     "@eslint/js": "npm:^10.0.1"
     eslint: "npm:^10.1.0"
     eslint-config-prettier: "npm:^10.1.8"
+    lucide: "npm:^1.7.0"
     prettier: "npm:^3.8.1"
     typescript: "npm:^5.9.3"
     typescript-eslint: "npm:^8.57.1"
