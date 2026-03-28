@@ -1,5 +1,5 @@
 import { CameraController, type Camera } from "./camera";
-import { rainbowGradient } from "./gradient";
+import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { Status } from "./status";
 import type { Screen } from "./tile";
@@ -18,7 +18,7 @@ const iterationsToImageData = (
   for (let i = 0; i < n; i++) {
     const iter = iterations[i]!;
     const o = i * 4;
-    const pixel = rainbowGradient(iter === maxIterations, iter, maxIterations);
+    const pixel = GradientController.currentGradient.fn(iter === maxIterations, iter, maxIterations);
     out[o] = pixel[0];
     out[o + 1] = pixel[1];
     out[o + 2] = pixel[2];
@@ -85,6 +85,10 @@ export class Renderer {
       return worker;
     });
     this.workQueue = [];
+  }
+
+  public rerender = () => {
+    this.dispatchRender();
   }
 
   public render = (camera: Camera, screen: Screen, immediate = false) => {

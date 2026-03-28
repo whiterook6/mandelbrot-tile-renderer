@@ -4,6 +4,7 @@ import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
 import { Camera as CameraIcon, createElement, Home } from "lucide";
+import { GradientController } from "./gradient";
 
 const setButtonWithIcon = (
   button: HTMLButtonElement,
@@ -58,6 +59,7 @@ const main = () => {
   cameraController.loadCamera(); // load camera from localStorage if set
 
   const renderer = new Renderer(context);
+  GradientController.init(renderer);
   const setView = () => {
     const screen: Screen = getScreen(canvas);
     const camera = cameraController.getCamera();

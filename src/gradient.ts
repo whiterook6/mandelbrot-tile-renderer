@@ -1,65 +1,92 @@
-export type Gradient = (
-  inside: boolean,
-  iterationCount: number,
-  maxIterations: number,
-) => [number, number, number, number];
+import { Renderer } from "./renderer";
 
-export const simpleGradient: Gradient = (
-  inside,
-  iterationCount,
-  maxIterations,
-) => {
-  if (inside) {
-    return [255, 255, 255, 255];
-  }
-  const brightness = Math.floor((255 * iterationCount) / maxIterations);
-  return [brightness, brightness, brightness, 255];
+export type Gradient = {
+  label: string,
+  fn: (
+    inside: boolean,
+    iterationCount: number,
+    maxIterations: number,
+  ) => [number, number, number, number]
 };
 
-/** Full-saturation HSV to sRGB, h in [0, 360), s and v in [0, 1]. */
-function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
-  const c = v * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = v - c;
-  let rp = 0;
-  let gp = 0;
-  let bp = 0;
-  if (h < 60) {
-    rp = c;
-    gp = x;
-  } else if (h < 120) {
-    rp = x;
-    gp = c;
-  } else if (h < 180) {
-    gp = c;
-    bp = x;
-  } else if (h < 240) {
-    gp = x;
-    bp = c;
-  } else if (h < 300) {
-    rp = x;
-    bp = c;
-  } else {
-    rp = c;
-    bp = x;
+const gradients: Gradient[] = [{
+  label: "Rainbow",
+  fn: (inside: boolean, iterationCount: number, maxIterations: number): [number, number, number, number] => {
+    if (inside) {
+      return [255, 255, 255, 255];
+    }
+    const hue = (iterationCount / maxIterations) * 360;
+    const saturation = 1;
+    const value = 1;
+    const c = value * saturation;
+    const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const m = value - c;
+    let rp = 0;
+    let gp = 0;
+    let bp = 0;
+    if (hue < 60) {
+      rp = c;
+      gp = x;
+    } else if (hue < 120) {
+      rp = x;
+      gp = c;
+    } else if (hue < 180) {
+      gp = c;
+      bp = x;
+    } else if (hue < 240) {
+      gp = x;
+      bp = c;
+    } else if (hue < 300) {
+      rp = x;
+      bp = c;
+    } else {
+      rp = c;
+      bp = x;
+    }
+    return [
+      Math.round((rp + m) * 255),
+      Math.round((gp + m) * 255),
+      Math.round((bp + m) * 255),
+      255,
+    ];
   }
-  return [
-    Math.round((rp + m) * 255),
-    Math.round((gp + m) * 255),
-    Math.round((bp + m) * 255),
-  ];
+}, {
+  label: "Black & white",
+  fn: (inside: boolean, iterationCount: number, maxIterations: number): [number, number, number, number] => {
+    if (inside) {
+      return [255, 255, 255, 255];
+    }
+    const g = Math.round((iterationCount / maxIterations) * 255);
+    return [g, g, g, 255];
+  }
+}]
+
+export const GradientController = {
+  selector: document.getElementById("gradient-select") as HTMLSelectElement,
+  preview: document.getElementById("gradient-preview") as HTMLDivElement,
+  gradients,
+  currentGradient: gradients[0],
+  setGradient: (label: string) => {
+    const gradient = gradients.find(g => g.label === label);
+    if (gradient) {
+      GradientController.currentGradient = gradient;
+    }
+  },
+  init: (renderer: Renderer) => {
+    GradientController.selector.innerHTML = "";
+    GradientController.gradients.forEach(gradient => {
+      const option = document.createElement("option");
+      option.value = gradient.label;
+      option.textContent = gradient.label;
+      GradientController.selector.appendChild(option);
+    });
+    GradientController.selector.onchange = () => {
+      if (GradientController.currentGradient.label === GradientController.selector.value) {
+        return;
+      }
+      GradientController.setGradient(GradientController.selector.value);
+      renderer.rerender();
+    };
+  }
 }
 
-/** Maps escape time to hue around the wheel (red → yellow → green → cyan → blue → magenta). */
-export const rainbowGradient: Gradient = (
-  inside,
-  iterationCount,
-  maxIterations,
-) => {
-  if (inside) {
-    return [255, 255, 255, 255];
-  }
-  const hue = (iterationCount / maxIterations) * 360;
-  const [r, g, b] = hsvToRgb(hue, 1, 1);
-  return [r, g, b, 255];
-};
