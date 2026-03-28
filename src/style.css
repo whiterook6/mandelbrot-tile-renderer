@@ -103,3 +103,74 @@ body {
   background-color: #ae00ff;
   color: white;
 }
+
+/* Select styled like a bar button (native appearance removed for consistency) */
+#bottom-bar #settings #gradient-controls {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  min-height: 0;
+}
+
+#gradient-select {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  padding: 0 28px 0 8px;
+  min-height: 24px;
+  border: none;
+  border-radius: 4px;
+  background-color: #0010ff;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#gradient-select:hover {
+  filter: brightness(1.06);
+}
+
+#gradient-select:focus {
+  outline: none;
+}
+
+#gradient-select:focus-visible {
+  outline: 2px solid #0010ff;
+  outline-offset: 2px;
+}
+
+/* Settings: select stays intrinsic width; preview grows to fill the bar */
+#bottom-bar #settings {
+  flex: 1;
+  min-width: 0;
+}
+
+#bottom-bar #settings #gradient-preview {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  min-height: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  /* Same hue sweep as rainbowGradient (full saturation, V = 1) */
+  background: linear-gradient(
+    to right,
+    hsl(0deg 100% 50%),
+    hsl(60deg 100% 50%),
+    hsl(120deg 100% 50%),
+    hsl(180deg 100% 50%),
+    hsl(240deg 100% 50%),
+    hsl(300deg 100% 50%),
+    hsl(360deg 100% 50%)
+  );
+}
