@@ -20,7 +20,11 @@ const setButtonWithIcon = (
 
 const main = () => {
   setButtonWithIcon(Status.resetView as HTMLButtonElement, Home, "Home");
-  setButtonWithIcon(Status.takeSnapshot as HTMLButtonElement, CameraIcon, "Snapshot");
+  setButtonWithIcon(
+    Status.takeSnapshot as HTMLButtonElement,
+    CameraIcon,
+    "Snapshot",
+  );
   const { canvas, context } = getCanvas("tile-canvas");
   fitCanvasToLayout(canvas);
 
