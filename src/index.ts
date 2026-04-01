@@ -52,7 +52,6 @@ const main = () => {
       worldY: 0,
       zoom: canvasEl.width / 3.5,
       rotation: 0,
-      generation: 0,
     };
   };
   const cameraController = new CameraController(zoomToMandelbrot(canvas));

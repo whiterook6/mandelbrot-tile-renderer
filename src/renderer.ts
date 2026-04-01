@@ -1,32 +1,10 @@
-import { CameraController, type Camera } from "./camera";
+import type { Camera } from "./camera";
 import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { Status } from "./status";
 import type { Screen } from "./tile";
 
 const RENDER_DEBOUNCE_MS = 125;
-
-const iterationsToImageData = (
-  iterations: Float32Array,
-  maxIterations: number,
-  width: number,
-  height: number,
-): ImageData => {
-  const imageData = new ImageData(width, height);
-  const out = imageData.data;
-  const n = width * height;
-  for (let i = 0; i < n; i++) {
-    const iter = iterations[i]!;
-    const o = i * 4;
-    const inside = iter >= maxIterations;
-    const pixel = GradientController.currentGradient.fn(inside, iter, maxIterations);
-    out[o] = pixel[0];
-    out[o + 1] = pixel[1];
-    out[o + 2] = pixel[2];
-    out[o + 3] = pixel[3];
-  }
-  return imageData;
-};
 
 const shuffleTileIndices = (count: number): number[] => {
   const indices = Array.from({ length: count }, (_, i) => i);
@@ -43,10 +21,10 @@ export class Renderer {
   private context: CanvasRenderingContext2D;
   private workers: Worker[];
   private workQueue: Array<RenderTileMessage>;
-  private camera: Camera = CameraController.initialCamera;
+  private camera: Camera | null = null;
+  private screen: Screen | null = null;
+  private generation: number = 0;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private pendingCamera: Camera | null = null;
-  private pendingScreen: Screen | null = null;
   private maxWorkerCount: number = Math.max(
     1,
     navigator.hardwareConcurrency - 1,
@@ -90,11 +68,12 @@ export class Renderer {
 
   public rerender = () => {
     this.dispatchRender();
-  }
+  };
 
   public render = (camera: Camera, screen: Screen, immediate = false) => {
-    this.pendingCamera = camera;
-    this.pendingScreen = screen;
+    this.camera = camera;
+    this.screen = screen;
+    this.generation++;
 
     if (immediate) {
       if (this.debounceTimer !== null) {
@@ -115,18 +94,18 @@ export class Renderer {
   };
 
   private dispatchRender = () => {
-    if (this.pendingCamera === null || this.pendingScreen === null) {
+    if (!this.camera || !this.screen) {
       return;
     }
-    const camera = this.pendingCamera;
-    const screen = this.pendingScreen;
+    const camera = this.camera;
+    const screen = this.screen;
+    const tileCount = this.screen.rowCount * this.screen.columnCount;
 
-    this.camera = camera;
-    const tileCount = screen.rowCount * screen.columnCount;
     Status.progress!.textContent = `${tileCount}`;
     this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
       type: "requestTile",
       camera,
+      generation: this.generation,
       screen,
       tileIndex: index,
     }));
@@ -150,10 +129,11 @@ export class Renderer {
 
   private receiveTile = (message: RenderedTileMessage) => {
     const { generation, iterations, maxIterations, tile } = message;
-    if (generation !== this.camera.generation) {
+    if (generation !== this.generation) {
       return;
     }
-    const image = iterationsToImageData(
+
+    const image = GradientController.renderTile(
       iterations,
       maxIterations,
       tile.width,

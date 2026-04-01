@@ -57,7 +57,7 @@ const mandelbrotEscapeSmooth = (
 // };
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
-  const { camera, screen, tileIndex } = event.data;
+  const { camera, screen, tileIndex, generation } = event.data;
   const tile = getTile(tileIndex, screen);
   const iterations = new Float32Array(tile.width * tile.height);
   const maxIterations = Math.min(
@@ -100,7 +100,11 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
         const tlY = y - 0.5;
         const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
         const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+        iterationAverage += mandelbrotEscapeSmooth(
+          worldX,
+          worldY,
+          maxIterations,
+        );
       }
       {
         // top right
@@ -108,7 +112,11 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
         const trY = y - 0.5;
         const worldX = origin.worldX + trX * dx.worldX + trY * dy.worldX;
         const worldY = origin.worldY + trX * dx.worldY + trY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+        iterationAverage += mandelbrotEscapeSmooth(
+          worldX,
+          worldY,
+          maxIterations,
+        );
       }
       {
         // bottom left
@@ -116,7 +124,11 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
         const tlY = y + 0.5;
         const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
         const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+        iterationAverage += mandelbrotEscapeSmooth(
+          worldX,
+          worldY,
+          maxIterations,
+        );
       }
       {
         // bottom right
@@ -124,7 +136,11 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
         const brY = y + 0.5;
         const worldX = origin.worldX + brX * dx.worldX + brY * dy.worldX;
         const worldY = origin.worldY + brX * dx.worldY + brY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+        iterationAverage += mandelbrotEscapeSmooth(
+          worldX,
+          worldY,
+          maxIterations,
+        );
       }
 
       iterations[i] = iterationAverage / 4;
@@ -133,7 +149,7 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
 
   const response: RenderedTileMessage = {
     type: "respondTile",
-    generation: camera.generation,
+    generation,
     iterations,
     maxIterations,
     tile,

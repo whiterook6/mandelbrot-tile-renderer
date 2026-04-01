@@ -1,65 +1,76 @@
 import { Renderer } from "./renderer";
 
 export type Gradient = {
-  label: string,
+  label: string;
   fn: (
     inside: boolean,
     iterationCount: number,
     maxIterations: number,
-  ) => [number, number, number, number]
+  ) => [number, number, number, number];
 };
 
-const gradients: Gradient[] = [{
-  label: "Rainbow",
-  fn: (inside: boolean, iterationCount: number, maxIterations: number): [number, number, number, number] => {
-    if (inside) {
-      return [255, 255, 255, 255];
-    }
-    const hue = (iterationCount / maxIterations) * 360;
-    const saturation = 1;
-    const value = 1;
-    const c = value * saturation;
-    const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
-    const m = value - c;
-    let rp = 0;
-    let gp = 0;
-    let bp = 0;
-    if (hue < 60) {
-      rp = c;
-      gp = x;
-    } else if (hue < 120) {
-      rp = x;
-      gp = c;
-    } else if (hue < 180) {
-      gp = c;
-      bp = x;
-    } else if (hue < 240) {
-      gp = x;
-      bp = c;
-    } else if (hue < 300) {
-      rp = x;
-      bp = c;
-    } else {
-      rp = c;
-      bp = x;
-    }
-    return [
-      Math.round((rp + m) * 255),
-      Math.round((gp + m) * 255),
-      Math.round((bp + m) * 255),
-      255,
-    ];
-  }
-}, {
-  label: "Black & white",
-  fn: (inside: boolean, iterationCount: number, maxIterations: number): [number, number, number, number] => {
-    if (inside) {
-      return [255, 255, 255, 255];
-    }
-    const g = Math.round((iterationCount / maxIterations) * 255);
-    return [g, g, g, 255];
-  }
-}]
+const gradients: Gradient[] = [
+  {
+    label: "Rainbow",
+    fn: (
+      inside: boolean,
+      iterationCount: number,
+      maxIterations: number,
+    ): [number, number, number, number] => {
+      if (inside) {
+        return [255, 255, 255, 255];
+      }
+      const hue = (iterationCount / maxIterations) * 360;
+      const saturation = 1;
+      const value = 1;
+      const c = value * saturation;
+      const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+      const m = value - c;
+      let rp = 0;
+      let gp = 0;
+      let bp = 0;
+      if (hue < 60) {
+        rp = c;
+        gp = x;
+      } else if (hue < 120) {
+        rp = x;
+        gp = c;
+      } else if (hue < 180) {
+        gp = c;
+        bp = x;
+      } else if (hue < 240) {
+        gp = x;
+        bp = c;
+      } else if (hue < 300) {
+        rp = x;
+        bp = c;
+      } else {
+        rp = c;
+        bp = x;
+      }
+      return [
+        Math.round((rp + m) * 255),
+        Math.round((gp + m) * 255),
+        Math.round((bp + m) * 255),
+        255,
+      ];
+    },
+  },
+  {
+    label: "Black & white",
+    fn: (
+      inside: boolean,
+      iterationCount: number,
+      maxIterations: number,
+    ): [number, number, number, number] => {
+      if (inside) {
+        return [255, 255, 255, 255];
+      }
+      const g = Math.round((iterationCount / maxIterations) * 255);
+      return [g, g, g, 255];
+    },
+  },
+];
 
 /** Samples escape-time colors with the same fn as the renderer (outside points only). */
 const PREVIEW_STEPS = 256;
@@ -83,7 +94,7 @@ export const GradientController = {
   gradients,
   currentGradient: gradients[0],
   setGradient: (label: string) => {
-    const gradient = gradients.find(g => g.label === label);
+    const gradient = gradients.find((g) => g.label === label);
     if (gradient) {
       GradientController.currentGradient = gradient;
       GradientController.applyPreviewGradient();
@@ -96,21 +107,50 @@ export const GradientController = {
   },
   init: (renderer: Renderer) => {
     GradientController.selector.innerHTML = "";
-    GradientController.gradients.forEach(gradient => {
+    GradientController.gradients.forEach((gradient) => {
       const option = document.createElement("option");
       option.value = gradient.label;
       option.textContent = gradient.label;
       GradientController.selector.appendChild(option);
     });
-    GradientController.selector.value = GradientController.currentGradient.label;
+    GradientController.selector.value =
+      GradientController.currentGradient.label;
     GradientController.applyPreviewGradient();
     GradientController.selector.onchange = () => {
-      if (GradientController.currentGradient.label === GradientController.selector.value) {
+      if (
+        GradientController.currentGradient.label ===
+        GradientController.selector.value
+      ) {
         return;
       }
       GradientController.setGradient(GradientController.selector.value);
       renderer.rerender();
     };
-  }
-}
+  },
 
+  renderTile: (
+    iterations: Float32Array,
+    maxIterations: number,
+    width: number,
+    height: number,
+  ): ImageData => {
+    const imageData = new ImageData(width, height);
+    const out = imageData.data;
+    const n = width * height;
+    for (let i = 0; i < n; i++) {
+      const iter = iterations[i]!;
+      const o = i * 4;
+      const inside = iter >= maxIterations;
+      const pixel = GradientController.currentGradient.fn(
+        inside,
+        iter,
+        maxIterations,
+      );
+      out[o] = pixel[0];
+      out[o + 1] = pixel[1];
+      out[o + 2] = pixel[2];
+      out[o + 3] = pixel[3];
+    }
+    return imageData;
+  },
+};

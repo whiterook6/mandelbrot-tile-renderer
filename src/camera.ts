@@ -5,7 +5,6 @@ export type Camera = {
   worldY: number;
   zoom: number;
   rotation: number;
-  generation: number;
 };
 
 export class CameraController {
@@ -14,7 +13,6 @@ export class CameraController {
     worldY: 0,
     zoom: 1,
     rotation: 0,
-    generation: 0,
   };
 
   private camera: Camera;
@@ -103,7 +101,6 @@ export class CameraController {
       ...this.camera,
       worldX: this.camera.worldX - dwx,
       worldY: this.camera.worldY - dwy,
-      generation: this.camera.generation + 1,
     };
 
     return this;
@@ -132,7 +129,6 @@ export class CameraController {
       worldX: this.camera.worldX + (dx * cos + dy * sin) * scale,
       worldY: this.camera.worldY + (-dx * sin + dy * cos) * scale,
       zoom: newZoom,
-      generation: this.camera.generation + 1,
     };
 
     return this;
@@ -155,7 +151,6 @@ export class CameraController {
     this.camera = {
       ...this.camera,
       rotation: this.camera.rotation + delta,
-      generation: this.camera.generation + 1,
     };
 
     return this;
