@@ -3,6 +3,7 @@ import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { Status } from "./status";
 import type { Screen } from "./tile";
+import { getCompositeTransform } from "./viewAffine";
 
 const RENDER_DEBOUNCE_MS = 125;
 
@@ -51,10 +52,21 @@ export class Renderer {
     1,
     navigator.hardwareConcurrency - 1,
   );
+  /** Generation of `camera` baked into `workQueue`; null until first queue build. */
+  private queuedForGeneration: number | null = null;
+  private workerInFlight: boolean[];
+
+  private backing: OffscreenCanvas | null = null;
+  private backingCtx: OffscreenCanvasRenderingContext2D | null = null;
+  /** Camera used for the RGB currently in `backing` (updated on each dispatch). */
+  private frozenCamera: Camera = { ...CameraController.initialCamera };
+  private compositeScheduled = false;
+  private hasDispatched = false;
 
   constructor(context: CanvasRenderingContext2D) {
     this.context = context;
-    this.workers = Array.from({ length: this.maxWorkerCount }, () => {
+    this.workerInFlight = new Array(this.maxWorkerCount).fill(false);
+    this.workers = Array.from({ length: this.maxWorkerCount }, (_, workerIndex) => {
       const worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
       });
@@ -76,11 +88,7 @@ export class Renderer {
       worker.addEventListener(
         "message",
         (event: MessageEvent<RenderedTileMessage>) => {
-          this.receiveTile(event.data);
-          const nextMessage = this.dequeueTile();
-          if (nextMessage !== undefined) {
-            worker.postMessage(nextMessage);
-          }
+          this.onWorkerMessage(workerIndex, event.data);
         },
       );
       return worker;
@@ -88,13 +96,124 @@ export class Renderer {
     this.workQueue = [];
   }
 
+  private postJobToWorker(workerIndex: number, message: RenderTileMessage) {
+    this.workerInFlight[workerIndex] = true;
+    this.workers[workerIndex]!.postMessage(message);
+  }
+
+  private onWorkerMessage(workerIndex: number, message: RenderedTileMessage) {
+    this.workerInFlight[workerIndex] = false;
+    this.receiveTile(message);
+    const nextMessage = this.dequeueTile();
+    if (nextMessage !== undefined) {
+      this.postJobToWorker(workerIndex, nextMessage);
+    }
+  }
+
+  private rebuildWorkQueue(camera: Camera, screen: Screen) {
+    const tileCount = screen.rowCount * screen.columnCount;
+    Status.progress!.textContent = `${tileCount}`;
+    this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
+      type: "requestTile",
+      camera,
+      screen,
+      tileIndex: index,
+    }));
+    this.camera = { ...camera };
+    this.queuedForGeneration = camera.generation;
+  }
+
+  private seedIdleWorkers() {
+    for (let i = 0; i < this.workers.length; i++) {
+      if (!this.workerInFlight[i]) {
+        const nextMessage = this.dequeueTile();
+        if (nextMessage !== undefined) {
+          this.postJobToWorker(i, nextMessage);
+        }
+      }
+    }
+  }
+
+  private ensureBacking(screen: Screen) {
+    if (this.backing === null || this.backingCtx === null) {
+      this.backing = new OffscreenCanvas(screen.width, screen.height);
+      const ctx = this.backing.getContext("2d", { alpha: false });
+      if (!ctx) {
+        throw new Error("2D backing context unavailable");
+      }
+      this.backingCtx = ctx;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, screen.width, screen.height);
+    }
+    if (
+      this.backing.width !== screen.width ||
+      this.backing.height !== screen.height
+    ) {
+      this.backing.width = screen.width;
+      this.backing.height = screen.height;
+      const live = this.pendingCamera ?? this.camera;
+      this.frozenCamera = { ...live };
+      this.clearBacking();
+    }
+  }
+
+  private clearBacking() {
+    if (this.backing === null || this.backingCtx === null) {
+      return;
+    }
+    const { width, height } = this.backing;
+    this.backingCtx.fillStyle = "#000000";
+    this.backingCtx.fillRect(0, 0, width, height);
+  }
+
+  private scheduleComposite() {
+    if (this.compositeScheduled) {
+      return;
+    }
+    this.compositeScheduled = true;
+    requestAnimationFrame(() => {
+      this.compositeScheduled = false;
+      this.composite();
+    });
+  }
+
+  private composite() {
+    const live = this.pendingCamera ?? this.camera;
+    const screen = this.pendingScreen;
+    if (screen === null || this.backing === null || this.backingCtx === null) {
+      return;
+    }
+
+    const ctx = this.context;
+    const t = getCompositeTransform(this.frozenCamera, live, screen);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.setTransform(t.a, t.b, t.c, t.d, t.e, t.f);
+    ctx.drawImage(this.backing, 0, 0);
+    ctx.restore();
+  }
+
   public rerender = () => {
     this.dispatchRender();
-  }
+  };
 
   public render = (camera: Camera, screen: Screen, immediate = false) => {
     this.pendingCamera = camera;
     this.pendingScreen = screen;
+    this.ensureBacking(screen);
+    if (!this.hasDispatched) {
+      this.frozenCamera = { ...camera };
+    }
+
+    if (
+      this.hasDispatched &&
+      camera.generation !== this.queuedForGeneration
+    ) {
+      this.rebuildWorkQueue(camera, screen);
+      this.seedIdleWorkers();
+    }
 
     if (immediate) {
       if (this.debounceTimer !== null) {
@@ -102,6 +221,7 @@ export class Renderer {
         this.debounceTimer = null;
       }
       this.dispatchRender();
+      this.scheduleComposite();
       return;
     }
 
@@ -111,7 +231,10 @@ export class Renderer {
     this.debounceTimer = setTimeout(() => {
       this.debounceTimer = null;
       this.dispatchRender();
+      this.scheduleComposite();
     }, RENDER_DEBOUNCE_MS);
+
+    this.scheduleComposite();
   };
 
   private dispatchRender = () => {
@@ -121,22 +244,15 @@ export class Renderer {
     const camera = this.pendingCamera;
     const screen = this.pendingScreen;
 
-    this.camera = camera;
-    const tileCount = screen.rowCount * screen.columnCount;
-    Status.progress!.textContent = `${tileCount}`;
-    this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
-      type: "requestTile",
-      camera,
-      screen,
-      tileIndex: index,
-    }));
+    this.ensureBacking(screen);
+    this.hasDispatched = true;
+    this.frozenCamera = { ...camera };
+    this.clearBacking();
 
-    this.workers.forEach((worker) => {
-      const nextMessage = this.dequeueTile();
-      if (nextMessage !== undefined) {
-        worker.postMessage(nextMessage);
-      }
-    });
+    this.rebuildWorkQueue(camera, screen);
+    this.seedIdleWorkers();
+
+    this.scheduleComposite();
   };
 
   private dequeueTile = () => {
@@ -150,7 +266,11 @@ export class Renderer {
 
   private receiveTile = (message: RenderedTileMessage) => {
     const { generation, iterations, maxIterations, tile } = message;
-    if (generation !== this.camera.generation) {
+    const liveGen = (this.pendingCamera ?? this.camera).generation;
+    if (generation !== liveGen) {
+      return;
+    }
+    if (this.backingCtx === null) {
       return;
     }
     const image = iterationsToImageData(
@@ -159,6 +279,7 @@ export class Renderer {
       tile.width,
       tile.height,
     );
-    this.context.putImageData(image, tile.x, tile.y);
+    this.backingCtx.putImageData(image, tile.x, tile.y);
+    this.scheduleComposite();
   };
 }
