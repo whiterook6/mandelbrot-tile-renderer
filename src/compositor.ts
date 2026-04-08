@@ -18,7 +18,10 @@ export class Compositor {
       throw new Error("Failed to get back context");
     }
 
-    if (frontContext.canvas.width !== backContext.canvas.width || frontContext.canvas.height !== backContext.canvas.height) {
+    if (
+      frontContext.canvas.width !== backContext.canvas.width ||
+      frontContext.canvas.height !== backContext.canvas.height
+    ) {
       throw new Error("Front and back canvas must have the same size");
     }
 
@@ -32,14 +35,18 @@ export class Compositor {
       height: this.frontContext.canvas.height,
       rowCount: Math.ceil(this.frontContext.canvas.height / 100),
       columnCount: Math.ceil(this.frontContext.canvas.width / 100),
-    }
-  }
+    };
+  };
 
   public drawTile = (image: ImageData, tile: Tile) => {
     this.frontContext.putImageData(image, tile.x, tile.y);
-  }
+  };
 
-  public blitToBackground = (backCamera: Camera, frontCamera: Camera, screen: Screen) => {
+  public blitToBackground = (
+    backCamera: Camera,
+    frontCamera: Camera,
+    screen: Screen,
+  ) => {
     this.backContext.setTransform(1, 0, 0, 1, 0, 0);
     this.backContext.fillStyle = "black";
     this.backContext.fillRect(0, 0, screen.width, screen.height);
@@ -64,22 +71,39 @@ export class Compositor {
     const dcy = backCamera.worldY - frontCamera.worldY;
     const tz1 = frontCamera.zoom * (dcx * cos1 - dcy * sin1);
     const tz2 = frontCamera.zoom * (dcx * sin1 + dcy * cos1);
-    const e = halfScreenWidth + tz1 - (a * halfScreenWidth + c * halfScreenheight);
-    const f = halfScreenheight + tz2 - (b * halfScreenWidth + d * halfScreenheight);
+    const e =
+      halfScreenWidth + tz1 - (a * halfScreenWidth + c * halfScreenheight);
+    const f =
+      halfScreenheight + tz2 - (b * halfScreenWidth + d * halfScreenheight);
     this.backContext.setTransform(a, b, c, d, e, f);
-    this.backContext.drawImage(this.frontCanvas, 0, 0, screen.width, screen.height);
-  }
+    this.backContext.drawImage(
+      this.frontCanvas,
+      0,
+      0,
+      screen.width,
+      screen.height,
+    );
+  };
 
   public clearForeground = () => {
-    this.frontContext.clearRect(0, 0, this.frontContext.canvas.width, this.frontContext.canvas.height);
+    this.frontContext.clearRect(
+      0,
+      0,
+      this.frontContext.canvas.width,
+      this.frontContext.canvas.height,
+    );
   };
 
   /** Hides stale foreground pixels so the warped back buffer is fully visible. Pointer events still hit the front canvas. */
   public hideForeground = () => {
-    this.frontCanvas.style.opacity = "0";
+    if (this.frontCanvas.style.opacity !== "0") {
+      this.frontCanvas.style.opacity = "0";
+    }
   };
 
   public showForeground = () => {
-    this.frontCanvas.style.removeProperty("opacity");
+    if (this.frontCanvas.style.opacity === "0") {
+      this.frontCanvas.style.removeProperty("opacity");
+    }
   };
 }

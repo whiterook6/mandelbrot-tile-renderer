@@ -1,5 +1,5 @@
 import { CameraController, type Camera } from "./camera";
-import { fitCanvassesToLayout, getCanvas, getScreen } from "./canvas";
+import { fitCanvasesToLayout, getCanvasElement, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
@@ -27,9 +27,9 @@ const main = () => {
     CameraIcon,
     "Snapshot",
   );
-  const { canvas } = getCanvas("tile-canvas");
-  const { canvas: backCanvas } = getCanvas("tile-canvas-back");
-  fitCanvassesToLayout(canvas, backCanvas);
+  const canvas = getCanvasElement("tile-canvas");
+  const backCanvas = getCanvasElement("tile-canvas-back");
+  fitCanvasesToLayout(canvas, backCanvas);
 
   const canvasCoordsFromEvent = (event: MouseEvent) => {
     const rect = canvas.getBoundingClientRect();
