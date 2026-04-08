@@ -54,9 +54,9 @@ export class Compositor {
     const halfScreenWidth = screen.width / 2;
     const halfScreenheight = screen.height / 2;
     const cos0 = Math.cos(backCamera.rotation);
-    const sin0 = Math.sin(backCamera.rotation);
+    const sin0 = -Math.sin(backCamera.rotation);
     const cos1 = Math.cos(frontCamera.rotation);
-    const sin1 = Math.sin(frontCamera.rotation);
+    const sin1 = -Math.sin(frontCamera.rotation);
 
     const r00 = cos1 * cos0 + sin1 * sin0;
     const r01 = -cos1 * sin0 + sin1 * cos0;
