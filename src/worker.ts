@@ -90,60 +90,98 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     worldY: down.worldY - origin.worldY,
   };
 
-  for (let y = 0; y < tile.height; y++) {
+  // render the border first. If the whole border is interior, we can skip the rest of the tile.
+  let borderInterior = true;
+
+  // top row: y = 0;
+  {
     for (let x = 0; x < tile.width; x++) {
-      const i = y * tile.width + x;
-      let iterationAverage = 0;
-      {
-        // top left
-        const tlX = x - 0.5;
-        const tlY = y - 0.5;
-        const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
-        const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(
-          worldX,
-          worldY,
-          maxIterations,
-        );
-      }
-      {
-        // top right
-        const trX = x + 0.5;
-        const trY = y - 0.5;
-        const worldX = origin.worldX + trX * dx.worldX + trY * dy.worldX;
-        const worldY = origin.worldY + trX * dx.worldY + trY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(
-          worldX,
-          worldY,
-          maxIterations,
-        );
-      }
-      {
-        // bottom left
-        const tlX = x - 0.5;
-        const tlY = y + 0.5;
-        const worldX = origin.worldX + tlX * dx.worldX + tlY * dy.worldX;
-        const worldY = origin.worldY + tlX * dx.worldY + tlY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(
-          worldX,
-          worldY,
-          maxIterations,
-        );
-      }
-      {
-        // bottom right
-        const brX = x + 0.5;
-        const brY = y + 0.5;
-        const worldX = origin.worldX + brX * dx.worldX + brY * dy.worldX;
-        const worldY = origin.worldY + brX * dx.worldY + brY * dy.worldY;
-        iterationAverage += mandelbrotEscapeSmooth(
-          worldX,
-          worldY,
-          maxIterations,
-        );
+      const i = 0 * tile.width + x;
+      const worldX = origin.worldX + x * dx.worldX;
+      const worldY = origin.worldY + x * dx.worldY;
+      const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+
+      if (iteration < maxIterations) {
+        borderInterior = false;
       }
 
-      iterations[i] = iterationAverage / 4;
+      iterations[i] = iteration;
+    }
+  }
+
+  // left column: x = 0;
+  {
+    for (let y = 0; y < tile.height; y++) {
+      const i = y * tile.width + 0;
+      const worldX = origin.worldX + y * dy.worldX;
+      const worldY = origin.worldY + y * dy.worldY;
+      const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+
+      if (iteration < maxIterations) {
+        borderInterior = false;
+      }
+
+      iterations[i] = iteration;
+    }
+  }
+
+  // bottom row: y = tile.height - 1;
+  {
+    const yb = tile.height - 1;
+    for (let x = 0; x < tile.width; x++) {
+      const i = yb * tile.width + x;
+      const worldX = origin.worldX + x * dx.worldX + yb * dy.worldX;
+      const worldY = origin.worldY + x * dx.worldY + yb * dy.worldY;
+
+      const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+
+      if (iteration < maxIterations) {
+        borderInterior = false;
+      }
+
+      iterations[i] = iteration;
+    }
+  }
+
+  // right column: x = tile.width - 1;
+  {
+    const xr = tile.width - 1;
+    for (let y = 0; y < tile.height; y++) {
+      const i = y * tile.width + xr;
+      const worldX = origin.worldX + xr * dx.worldX + y * dy.worldX;
+      const worldY = origin.worldY + xr * dx.worldY + y * dy.worldY;
+
+      const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+
+      if (iteration < maxIterations) {
+        borderInterior = false;
+      }
+
+      iterations[i] = iteration;
+    }
+  }
+
+  if (borderInterior) {
+    for (let i = 0; i < tile.width * tile.height; i++) {
+      iterations[i] = maxIterations;
+    }
+    const response: RenderedTileMessage = {
+      type: "respondTile",
+      generation,
+      iterations,
+      maxIterations,
+      tile,
+    };
+    self.postMessage(response, { transfer: [iterations.buffer] });
+    return;
+  }
+
+  for (let y = 1; y < tile.height - 1; y++) {
+    for (let x = 1; x < tile.width - 1; x++) {
+      const i = y * tile.width + x;
+      const worldX = origin.worldX + x * dx.worldX + y * dy.worldX;
+      const worldY = origin.worldY + x * dx.worldY + y * dy.worldY;
+      iterations[i] = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
     }
   }
 
