@@ -52,29 +52,32 @@ export class Compositor {
     this.backContext.fillRect(0, 0, screen.width, screen.height);
 
     const halfScreenWidth = screen.width / 2;
-    const halfScreenheight = screen.height / 2;
-    const cos0 = Math.cos(backCamera.rotation);
-    const sin0 = -Math.sin(backCamera.rotation);
-    const cos1 = Math.cos(frontCamera.rotation);
-    const sin1 = -Math.sin(frontCamera.rotation);
+    const halfScreenHeight = screen.height / 2;
 
-    const r00 = cos1 * cos0 + sin1 * sin0;
-    const r01 = -cos1 * sin0 + sin1 * cos0;
-    const r10 = -sin1 * cos0 + cos1 * sin0;
-    const r11 = sin1 * sin0 + cos1 * cos0;
-    const s = frontCamera.zoom / backCamera.zoom;
-    const a = s * r00;
-    const c = s * r01;
-    const b = s * r10;
-    const d = s * r11;
+    // Maps source (backCamera) screen pixels -> destination (frontCamera) screen pixels.
+    // Using the same world->screen convention as CameraController:
+    // p = center + zoom * R(theta) * (world - cameraCenter)
+    const scale = frontCamera.zoom / backCamera.zoom;
+    const deltaRotation = frontCamera.rotation - backCamera.rotation;
+    const cosDelta = Math.cos(deltaRotation);
+    const sinDelta = Math.sin(deltaRotation);
+
+    const a = scale * cosDelta;
+    const b = scale * sinDelta;
+    const c = -scale * sinDelta;
+    const d = scale * cosDelta;
+
     const dcx = backCamera.worldX - frontCamera.worldX;
     const dcy = backCamera.worldY - frontCamera.worldY;
-    const tz1 = frontCamera.zoom * (dcx * cos1 - dcy * sin1);
-    const tz2 = frontCamera.zoom * (dcx * sin1 + dcy * cos1);
+    const cosFront = Math.cos(frontCamera.rotation);
+    const sinFront = Math.sin(frontCamera.rotation);
+    const tx = frontCamera.zoom * (dcx * cosFront - dcy * sinFront);
+    const ty = frontCamera.zoom * (dcx * sinFront + dcy * cosFront);
+
     const e =
-      halfScreenWidth + tz1 - (a * halfScreenWidth + c * halfScreenheight);
+      halfScreenWidth + tx - (a * halfScreenWidth + c * halfScreenHeight);
     const f =
-      halfScreenheight + tz2 - (b * halfScreenWidth + d * halfScreenheight);
+      halfScreenHeight + ty - (b * halfScreenWidth + d * halfScreenHeight);
     this.backContext.setTransform(a, b, c, d, e, f);
     this.backContext.drawImage(
       this.frontCanvas,

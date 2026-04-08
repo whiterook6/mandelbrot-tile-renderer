@@ -1,12 +1,14 @@
 import { Renderer } from "./renderer";
 
+type Pixel = [number, number, number, number];
+
 export type Gradient = {
   label: string;
   fn: (
     inside: boolean,
     iterationCount: number,
     maxIterations: number,
-  ) => [number, number, number, number];
+  ) => Pixel;
 };
 
 const gradients: Gradient[] = [
@@ -16,7 +18,7 @@ const gradients: Gradient[] = [
       inside: boolean,
       iterationCount: number,
       maxIterations: number,
-    ): [number, number, number, number] => {
+    ): Pixel => {
       if (inside) {
         return [255, 255, 255, 255];
       }
@@ -62,7 +64,7 @@ const gradients: Gradient[] = [
       inside: boolean,
       iterationCount: number,
       maxIterations: number,
-    ): [number, number, number, number] => {
+    ): Pixel => {
       if (inside) {
         return [255, 255, 255, 255];
       }
@@ -70,6 +72,21 @@ const gradients: Gradient[] = [
       return [g, g, g, 255];
     },
   },
+  {
+    label: "Groovy",
+    fn: (
+      inside: boolean,
+      iterationCount: number
+    ): Pixel => {
+      if (inside) {
+        return [255, 255, 255, 255];
+      }
+      if (Math.round(iterationCount) % 2 === 0){
+        return [152, 27, 242, 255];
+      }
+      return [224, 20, 27, 255];
+    },
+  }
 ];
 
 /** Samples escape-time colors with the same fn as the renderer (outside points only). */
