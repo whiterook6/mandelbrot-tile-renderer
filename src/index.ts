@@ -1,10 +1,11 @@
 import { CameraController, type Camera } from "./camera";
-import { fitCanvasToLayout, getCanvas, getScreen } from "./canvas";
+import { fitCanvassesToLayout, getCanvas, getScreen } from "./canvas";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
 import { Camera as CameraIcon, createElement, Home } from "lucide";
 import { GradientController } from "./gradient";
+import { Compositor } from "./compositor";
 
 const setButtonWithIcon = (
   button: HTMLButtonElement,
@@ -26,8 +27,9 @@ const main = () => {
     CameraIcon,
     "Snapshot",
   );
-  const { canvas, context } = getCanvas("tile-canvas");
-  fitCanvasToLayout(canvas);
+  const { canvas } = getCanvas("tile-canvas");
+  const { canvas: backCanvas } = getCanvas("tile-canvas-back");
+  fitCanvassesToLayout(canvas, backCanvas);
 
   const canvasCoordsFromEvent = (event: MouseEvent) => {
     const rect = canvas.getBoundingClientRect();
@@ -57,7 +59,8 @@ const main = () => {
   const cameraController = new CameraController(zoomToMandelbrot(canvas));
   cameraController.loadCamera(); // load camera from localStorage if set
 
-  const renderer = new Renderer(context);
+  const compositor = new Compositor(canvas, backCanvas);
+  const renderer = new Renderer(compositor, cameraController.getCamera());
   GradientController.init(renderer);
   const setView = () => {
     const screen: Screen = getScreen(canvas);

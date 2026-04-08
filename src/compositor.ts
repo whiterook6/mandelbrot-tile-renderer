@@ -3,15 +3,11 @@ import type { Screen, Tile } from "./tile";
 
 export class Compositor {
   private frontCanvas: HTMLCanvasElement;
-  private backCanvas: HTMLCanvasElement;
   private frontContext: CanvasRenderingContext2D;
   private backContext: CanvasRenderingContext2D;
 
   constructor(frontCanvas: HTMLCanvasElement, backCanvas: HTMLCanvasElement) {
     this.frontCanvas = frontCanvas;
-    this.backCanvas = backCanvas;
-    this.frontCanvas.style.zIndex = "1";
-    this.backCanvas.style.zIndex = "0";
 
     const frontContext = frontCanvas.getContext("2d");
     if (!frontContext) {
@@ -76,5 +72,14 @@ export class Compositor {
 
   public clearForeground = () => {
     this.frontContext.clearRect(0, 0, this.frontContext.canvas.width, this.frontContext.canvas.height);
-  }
+  };
+
+  /** Hides stale foreground pixels so the warped back buffer is fully visible. Pointer events still hit the front canvas. */
+  public hideForeground = () => {
+    this.frontCanvas.style.opacity = "0";
+  };
+
+  public showForeground = () => {
+    this.frontCanvas.style.removeProperty("opacity");
+  };
 }

@@ -15,15 +15,22 @@ export const getCanvas = (
   return { canvas, context };
 };
 
-export const fitCanvasToLayout = (canvas: HTMLCanvasElement) => {
+export const fitCanvassesToLayout = (
+  primary: HTMLCanvasElement,
+  mirror?: HTMLCanvasElement,
+) => {
   const dpr = window.devicePixelRatio || 1;
 
   const r = () => {
-    const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-    const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
+    const w = Math.max(1, Math.floor(primary.clientWidth * dpr));
+    const h = Math.max(1, Math.floor(primary.clientHeight * dpr));
+    if (primary.width !== w || primary.height !== h) {
+      primary.width = w;
+      primary.height = h;
+    }
+    if (mirror && (mirror.width !== w || mirror.height !== h)) {
+      mirror.width = w;
+      mirror.height = h;
     }
   };
 
