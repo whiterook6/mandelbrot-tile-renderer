@@ -1,4 +1,5 @@
 import type { Camera } from "./camera";
+import { Compositor } from "./compositor";
 import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { Status } from "./status";
@@ -18,20 +19,24 @@ const shuffleTileIndices = (count: number): number[] => {
 };
 
 export class Renderer {
-  private context: CanvasRenderingContext2D;
   private workers: Worker[];
+  private compositor: Compositor;
   private workQueue: Array<RenderTileMessage>;
-  private camera: Camera | null = null;
+  private frontCamera: Camera;
   private screen: Screen | null = null;
   private generation: number = 0;
+  private cameraForActiveGeneration: Camera;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private maxWorkerCount: number = Math.max(
     1,
     navigator.hardwareConcurrency - 1,
   );
 
-  constructor(context: CanvasRenderingContext2D) {
-    this.context = context;
+  constructor(compositor: Compositor, initialCamera: Camera) {
+    this.compositor = compositor;
+    this.frontCamera = initialCamera;
+    this.cameraForActiveGeneration = initialCamera;
+
     this.workers = Array.from({ length: this.maxWorkerCount }, () => {
       const worker = new Worker(new URL("./worker.ts", import.meta.url), {
         type: "module",
@@ -66,21 +71,23 @@ export class Renderer {
     this.workQueue = [];
   }
 
-  public rerender = () => {
-    this.dispatchRender();
-  };
-
   public render = (camera: Camera, screen: Screen, immediate = false) => {
-    this.camera = camera;
+    this.frontCamera = camera;
     this.screen = screen;
     this.generation++;
+    this.compositor.blitToBackground(
+      this.cameraForActiveGeneration,
+      this.frontCamera,
+      this.screen,
+    );
+    this.compositor.hideForeground(); // reveal again when tiles are received
 
     if (immediate) {
       if (this.debounceTimer !== null) {
         clearTimeout(this.debounceTimer);
         this.debounceTimer = null;
       }
-      this.dispatchRender();
+      this.dispatchRender(camera);
       return;
     }
 
@@ -89,15 +96,21 @@ export class Renderer {
     }
     this.debounceTimer = setTimeout(() => {
       this.debounceTimer = null;
-      this.dispatchRender();
+      this.dispatchRender(camera);
     }, RENDER_DEBOUNCE_MS);
   };
 
-  private dispatchRender = () => {
-    if (!this.camera || !this.screen) {
+  public rerender = (immediate = true) => {
+    if (!this.screen) {
       return;
     }
-    const camera = this.camera;
+    this.render(this.frontCamera, this.screen, immediate);
+  };
+
+  private dispatchRender = (camera: Camera) => {
+    if (!this.screen) {
+      return;
+    }
     const screen = this.screen;
     const tileCount = this.screen.rowCount * this.screen.columnCount;
 
@@ -110,6 +123,9 @@ export class Renderer {
       tileIndex: index,
     }));
 
+    this.cameraForActiveGeneration = { ...camera };
+
+    this.compositor.clearForeground();
     this.workers.forEach((worker) => {
       const nextMessage = this.dequeueTile();
       if (nextMessage !== undefined) {
@@ -133,12 +149,13 @@ export class Renderer {
       return;
     }
 
+    this.compositor.showForeground();
     const image = GradientController.renderTile(
       iterations,
       maxIterations,
       tile.width,
       tile.height,
     );
-    this.context.putImageData(image, tile.x, tile.y);
+    this.compositor.drawTile(image, tile);
   };
 }
