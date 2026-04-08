@@ -1,29 +1,29 @@
 import type { Screen } from "./tile";
 
-export const getCanvas = (
-  id: string,
-): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } => {
+export const getCanvasElement = (id: string): HTMLCanvasElement => {
   const canvas = document.getElementById(id);
   if (!(canvas instanceof HTMLCanvasElement)) {
     throw new Error(`Canvas with id ${id} not found`);
   }
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("2D canvas context unavailable");
-  }
-  return { canvas, context };
+  return canvas;
 };
 
-export const fitCanvasToLayout = (canvas: HTMLCanvasElement) => {
+export const fitCanvasesToLayout = (
+  primary: HTMLCanvasElement,
+  mirror?: HTMLCanvasElement,
+) => {
   const dpr = window.devicePixelRatio || 1;
 
   const r = () => {
-    const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-    const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
+    const w = Math.max(1, Math.floor(primary.clientWidth * dpr));
+    const h = Math.max(1, Math.floor(primary.clientHeight * dpr));
+    if (primary.width !== w || primary.height !== h) {
+      primary.width = w;
+      primary.height = h;
+    }
+    if (mirror && (mirror.width !== w || mirror.height !== h)) {
+      mirror.width = w;
+      mirror.height = h;
     }
   };
 
