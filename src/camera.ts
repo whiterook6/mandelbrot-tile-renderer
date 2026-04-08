@@ -89,6 +89,25 @@ export class CameraController {
     };
   }
 
+  getWorldBasisVectors(): {
+    dx: { worldX: number; worldY: number };
+    dy: { worldX: number; worldY: number };
+  } {
+    const cos = Math.cos(this.camera.rotation);
+    const sin = Math.sin(this.camera.rotation);
+    const invZ = 1 / this.camera.zoom;
+    return {
+      dx: {
+        worldX: cos * invZ,
+        worldY: -sin * invZ,
+      },
+      dy: {
+        worldX: sin * invZ,
+        worldY: cos * invZ,
+      },
+    };
+  }
+
   // controls
 
   panCamera(event: { movementX: number; movementY: number }): CameraController {

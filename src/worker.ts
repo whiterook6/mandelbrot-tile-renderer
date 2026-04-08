@@ -20,7 +20,7 @@ const mandelbrotEscapeSmooth = (
       const r = Math.sqrt(x2 + y2);
       return i + 1 - Math.log(Math.log(r)) / Math.LN2;
     }
-    const tmp = zx * zx - zy * zy + worldX;
+    const tmp = x2 - y2 + worldX;
     zy = 2 * zx * zy + worldY;
     zx = tmp;
   }
@@ -71,24 +71,10 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     screenY: tile.y + 0.5,
   });
 
-  // build a "basis matrix" aka delta-right and delta-down vectors
-  // to make looping simpler
-  const right = cameraController.getWorldPosition(screen, {
-    screenX: tile.x + 1.5,
-    screenY: tile.y + 0.5,
-  });
-  const down = cameraController.getWorldPosition(screen, {
-    screenX: tile.x + 0.5,
-    screenY: tile.y + 1.5,
-  });
-  const dx = {
-    worldX: right.worldX - origin.worldX,
-    worldY: right.worldY - origin.worldY,
-  };
-  const dy = {
-    worldX: down.worldX - origin.worldX,
-    worldY: down.worldY - origin.worldY,
-  };
+  // Build a "basis matrix" aka delta-right and delta-down vectors.
+  // Compute directly from camera transform to avoid precision loss from
+  // subtracting nearly equal world coordinates at high zoom.
+  const { dx, dy } = cameraController.getWorldBasisVectors();
 
   // render the border first. If the whole border is interior, we can skip the rest of the tile.
   let borderInterior = true;
