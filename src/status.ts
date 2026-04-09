@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import type { Camera } from "./camera";
 import type { Screen } from "./tile";
 
@@ -14,7 +15,7 @@ export const Status = {
   setView: (camera: Camera, screen: Screen) => {
     Status.viewX!.textContent = `${camera.worldX.toString()}`;
     Status.viewY!.textContent = `${camera.worldY.toString()}`;
-    Status.viewZoom!.textContent = `${camera.zoom.div(screen.width).toString()}`;
+    Status.viewZoom!.textContent = `${new Decimal(screen.width).div(camera.zoom).toString()}`
     const deg = Math.round((camera.rotation * 180) / Math.PI);
     Status.viewRotation!.textContent = `${deg}°`;
   },

@@ -1,6 +1,6 @@
 /* global self */
 
-import { CameraController } from "./camera";
+import { CameraController, deserializeCamera } from "./camera";
 import type { RenderTileMessage, RenderedTileMessage } from "./messages";
 import { getTile } from "./tile";
 import Decimal from "decimal.js";
@@ -42,12 +42,14 @@ const mandelbrotEscapeSmooth = (
 };
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
-  const { camera, screen, tileIndex, generation } = event.data;
+  const t0 = performance.now();
+  const { camera: cameraWire, screen, tileIndex, generation } = event.data;
+  const camera = deserializeCamera(cameraWire);
   const tile = getTile(tileIndex, screen);
   const iterations = new Float32Array(tile.width * tile.height);
   const maxIterations = Math.min(
     16000,
-    Math.floor(64 + 24 * Math.log2(camera.zoom)),
+    Math.floor(64 + 24 * Math.log2(camera.zoom.toNumber())),
   );
 
   const cameraController = new CameraController(camera);
@@ -143,6 +145,17 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
       maxIterations,
       tile,
     };
+    console.log(
+      "[tile worker] gen",
+      generation,
+      "tile",
+      tileIndex,
+      `${tile.width}×${tile.height}`,
+      "maxIter",
+      maxIterations,
+      "interior-skip",
+      `${(performance.now() - t0).toFixed(1)}ms`,
+    );
     self.postMessage(response, { transfer: [iterations.buffer] });
     return;
   }
@@ -163,5 +176,16 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     maxIterations,
     tile,
   };
+  console.log(
+    "[tile worker] gen",
+    generation,
+    "tile",
+    tileIndex,
+    `${tile.width}×${tile.height}`,
+    "maxIter",
+    maxIterations,
+    "full",
+    `${(performance.now() - t0).toFixed(1)}ms`,
+  );
   self.postMessage(response, { transfer: [iterations.buffer] });
 });

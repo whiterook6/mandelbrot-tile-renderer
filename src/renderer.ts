@@ -1,4 +1,4 @@
-import type { Camera } from "./camera";
+import { serializeCamera, type Camera } from "./camera";
 import { Compositor } from "./compositor";
 import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
@@ -27,6 +27,8 @@ export class Renderer {
   private generation: number = 0;
   private cameraForActiveGeneration: Camera;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private expectedTilesInGeneration = 0;
+  private tilesCompletedInGeneration = 0;
   private maxWorkerCount: number = Math.max(
     1,
     navigator.hardwareConcurrency - 1,
@@ -115,9 +117,17 @@ export class Renderer {
     const tileCount = this.screen.rowCount * this.screen.columnCount;
 
     Status.progress!.textContent = `${tileCount}`;
+    this.expectedTilesInGeneration = tileCount;
+    this.tilesCompletedInGeneration = 0;
+    console.log(
+      "[renderer] dispatch generation",
+      this.generation,
+      "expected tiles",
+      tileCount,
+    );
     this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
       type: "requestTile",
-      camera,
+      camera: serializeCamera(camera),
       generation: this.generation,
       screen,
       tileIndex: index,
@@ -148,6 +158,17 @@ export class Renderer {
     if (generation !== this.generation) {
       return;
     }
+
+    this.tilesCompletedInGeneration++;
+    console.log(
+      "[renderer] composited",
+      this.tilesCompletedInGeneration,
+      "/",
+      this.expectedTilesInGeneration,
+      "at",
+      tile.x,
+      tile.y,
+    );
 
     this.compositor.showForeground();
     const image = GradientController.renderTile(

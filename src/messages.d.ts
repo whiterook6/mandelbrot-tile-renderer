@@ -1,8 +1,9 @@
+import type { SerializedCamera } from "./camera";
 import type { Screen, Tile } from "./tile";
 
 export type RenderTileMessage = {
   type: "requestTile";
-  camera: Camera;
+  camera: SerializedCamera;
   generation: number;
   tileIndex: number;
   screen: Screen;

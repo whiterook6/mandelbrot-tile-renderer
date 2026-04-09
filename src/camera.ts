@@ -25,6 +25,32 @@ export type Camera = {
   rotation: number;
 };
 
+/** Structured-clone-safe form for `postMessage` (e.g. to workers). */
+export type SerializedCamera = {
+  worldX: string;
+  worldY: string;
+  zoom: string;
+  rotation: number;
+};
+
+export function serializeCamera(camera: Camera): SerializedCamera {
+  return {
+    worldX: camera.worldX.toString(),
+    worldY: camera.worldY.toString(),
+    zoom: camera.zoom.toString(),
+    rotation: camera.rotation,
+  };
+}
+
+export function deserializeCamera(data: SerializedCamera): Camera {
+  return {
+    worldX: new Decimal(data.worldX),
+    worldY: new Decimal(data.worldY),
+    zoom: new Decimal(data.zoom),
+    rotation: data.rotation,
+  };
+}
+
 export class CameraController {
   static initialCamera: Camera = {
     worldX: new Decimal(0),
