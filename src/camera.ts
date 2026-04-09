@@ -1,23 +1,6 @@
 import Decimal from "decimal.js";
 import type { Screen } from "./tile";
 
-function decimalFromStored(value: unknown, fallback: Decimal): Decimal {
-  if (value === undefined || value === null) {
-    return fallback;
-  }
-  if (typeof value === "string") {
-    try {
-      return new Decimal(value);
-    } catch {
-      return fallback;
-    }
-  }
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return new Decimal(value);
-  }
-  return fallback;
-}
-
 export type Camera = {
   worldX: Decimal;
   worldY: Decimal;
@@ -30,26 +13,8 @@ export type SerializedCamera = {
   worldX: string;
   worldY: string;
   zoom: string;
-  rotation: number;
+  rotation: string;
 };
-
-export function serializeCamera(camera: Camera): SerializedCamera {
-  return {
-    worldX: camera.worldX.toString(),
-    worldY: camera.worldY.toString(),
-    zoom: camera.zoom.toString(),
-    rotation: camera.rotation,
-  };
-}
-
-export function deserializeCamera(data: SerializedCamera): Camera {
-  return {
-    worldX: new Decimal(data.worldX),
-    worldY: new Decimal(data.worldY),
-    zoom: new Decimal(data.zoom),
-    rotation: data.rotation,
-  };
-}
 
 export class CameraController {
   static initialCamera: Camera = {
@@ -58,6 +23,24 @@ export class CameraController {
     zoom: new Decimal(1),
     rotation: 0,
   };
+
+  static deserializeCamera(data: SerializedCamera): Camera {
+    return {
+      worldX: new Decimal(data.worldX),
+      worldY: new Decimal(data.worldY),
+      zoom: new Decimal(data.zoom),
+      rotation: parseFloat(data.rotation),
+    };
+  }
+
+  static serializeCamera(camera: Camera): SerializedCamera {
+    return {
+      worldX: camera.worldX.toString(),
+      worldY: camera.worldY.toString(),
+      zoom: camera.zoom.toString(),
+      rotation: camera.rotation.toFixed(10),
+    };
+  }
 
   private camera: Camera;
   constructor(fallback?: Camera) {
@@ -70,39 +53,19 @@ export class CameraController {
       return this;
     }
 
-    let parsed: unknown;
+    let parsed: SerializedCamera;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(raw) as SerializedCamera;
     } catch (error) {
       console.error("Error parsing camera from localStorage", error);
       return this;
     }
 
-    if (!parsed || typeof parsed !== "object") {
+    if (!parsed.worldX || !parsed.worldY || !parsed.zoom || !parsed.rotation) {
       return this;
     }
 
-    const o = parsed as Record<string, unknown>;
-    const initial = CameraController.initialCamera;
-
-    const rotationRaw = o.rotation;
-    let rotation: number;
-    if (typeof rotationRaw === "number" && Number.isFinite(rotationRaw)) {
-      rotation = rotationRaw;
-    } else if (typeof rotationRaw === "string") {
-      const n = Number(rotationRaw);
-      rotation = Number.isFinite(n) ? n : initial.rotation;
-    } else {
-      rotation = initial.rotation;
-    }
-
-    this.camera = {
-      worldX: decimalFromStored(o.worldX, initial.worldX),
-      worldY: decimalFromStored(o.worldY, initial.worldY),
-      zoom: decimalFromStored(o.zoom, initial.zoom),
-      rotation,
-    };
-
+    this.camera = CameraController.deserializeCamera(parsed);
     return this;
   }
 
@@ -118,13 +81,8 @@ export class CameraController {
   }
 
   saveCamera(): CameraController {
-    const payload = {
-      worldX: this.camera.worldX.toString(),
-      worldY: this.camera.worldY.toString(),
-      zoom: this.camera.zoom.toString(),
-      rotation: this.camera.rotation,
-    };
-    localStorage.setItem("camera", JSON.stringify(payload));
+    const serialized = CameraController.serializeCamera(this.camera);
+    localStorage.setItem("camera", JSON.stringify(serialized));
     return this;
   }
 

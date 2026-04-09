@@ -1,4 +1,4 @@
-import { serializeCamera, type Camera } from "./camera";
+import { CameraController, type Camera } from "./camera";
 import { Compositor } from "./compositor";
 import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
@@ -127,7 +127,7 @@ export class Renderer {
     );
     this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
       type: "requestTile",
-      camera: serializeCamera(camera),
+      camera: CameraController.serializeCamera(camera),
       generation: this.generation,
       screen,
       tileIndex: index,

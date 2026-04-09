@@ -1,6 +1,6 @@
 /* global self */
 
-import { CameraController, deserializeCamera } from "./camera";
+import { CameraController } from "./camera";
 import type { RenderTileMessage, RenderedTileMessage } from "./messages";
 import { getTile } from "./tile";
 import Decimal from "decimal.js";
@@ -44,7 +44,7 @@ const mandelbrotEscapeSmooth = (
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   const t0 = performance.now();
   const { camera: cameraWire, screen, tileIndex, generation } = event.data;
-  const camera = deserializeCamera(cameraWire);
+  const camera = CameraController.deserializeCamera(cameraWire);
   const tile = getTile(tileIndex, screen);
   const iterations = new Float32Array(tile.width * tile.height);
   const maxIterations = Math.min(
