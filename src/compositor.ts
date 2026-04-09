@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import type { Camera } from "./camera";
 import type { Screen, Tile } from "./tile";
 
@@ -57,28 +58,37 @@ export class Compositor {
     // Maps source (backCamera) screen pixels -> destination (frontCamera) screen pixels.
     // Using the same world->screen convention as CameraController:
     // p = center + zoom * R(theta) * (world - cameraCenter)
-    const scale = frontCamera.zoom / backCamera.zoom;
+    const scale = frontCamera.zoom.div(backCamera.zoom);
     const deltaRotation = frontCamera.rotation - backCamera.rotation;
     const cosDelta = Math.cos(deltaRotation);
     const sinDelta = Math.sin(deltaRotation);
 
-    const a = scale * cosDelta;
-    const b = scale * sinDelta;
-    const c = -scale * sinDelta;
-    const d = scale * cosDelta;
+    const a = scale.mul(cosDelta);
+    const b = scale.mul(sinDelta);
+    const c = scale.mul(sinDelta).neg();
+    const d = scale.mul(cosDelta);
 
-    const dcx = backCamera.worldX - frontCamera.worldX;
-    const dcy = backCamera.worldY - frontCamera.worldY;
+    const dcx = backCamera.worldX.minus(frontCamera.worldX);
+    const dcy = backCamera.worldY.minus(frontCamera.worldY);
     const cosFront = Math.cos(frontCamera.rotation);
     const sinFront = Math.sin(frontCamera.rotation);
-    const tx = frontCamera.zoom * (dcx * cosFront - dcy * sinFront);
-    const ty = frontCamera.zoom * (dcx * sinFront + dcy * cosFront);
+    const tx = frontCamera.zoom.mul(dcx.mul(cosFront).minus(dcy.mul(sinFront)));
+    const ty = frontCamera.zoom.mul(dcx.mul(sinFront).plus(dcy.mul(cosFront)));
 
-    const e =
-      halfScreenWidth + tx - (a * halfScreenWidth + c * halfScreenHeight);
-    const f =
-      halfScreenHeight + ty - (b * halfScreenWidth + d * halfScreenHeight);
-    this.backContext.setTransform(a, b, c, d, e, f);
+    const e = new Decimal(halfScreenWidth)
+      .plus(tx)
+      .minus(a.mul(halfScreenWidth).plus(c.mul(halfScreenHeight)));
+    const f = new Decimal(halfScreenHeight)
+      .plus(ty)
+      .minus(b.mul(halfScreenWidth).plus(d.mul(halfScreenHeight)));
+    this.backContext.setTransform(
+      a.toNumber(),
+      b.toNumber(),
+      c.toNumber(),
+      d.toNumber(),
+      e.toNumber(),
+      f.toNumber(),
+    );
     this.backContext.drawImage(
       this.frontCanvas,
       0,

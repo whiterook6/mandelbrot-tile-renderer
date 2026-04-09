@@ -3,58 +3,43 @@
 import { CameraController } from "./camera";
 import type { RenderTileMessage, RenderedTileMessage } from "./messages";
 import { getTile } from "./tile";
+import Decimal from "decimal.js";
 
-// Smooth escape time when |z|² > 4: ν = n + 1 − ln(ln|z|) / ln 2 (continuous iteration).
-// Interior uses `maxIterations`.
+const TWO = new Decimal(2);
+const FOUR = new Decimal(4);
+const ZERO = new Decimal(0);
+
 const mandelbrotEscapeSmooth = (
-  worldX: number,
-  worldY: number,
+  cx: Decimal, // constant c (world position)
+  cy: Decimal,
   maxIterations: number,
 ): number => {
-  let zx = worldX;
-  let zy = worldY;
+  // z starts at 0 for Mandelbrot
+  let zx = ZERO;
+  let zy = ZERO;
+
   for (let i = 0; i < maxIterations; i++) {
-    const x2 = zx * zx;
-    const y2 = zy * zy;
-    if (x2 + y2 > 4) {
-      const r = Math.sqrt(x2 + y2);
+    const zx2 = zx.mul(zx);
+    const zy2 = zy.mul(zy);
+
+    const mag2 = zx2.plus(zy2);
+
+    // escape check
+    if (mag2.gt(FOUR)) {
+      const r = Math.sqrt(mag2.toNumber());
       return i + 1 - Math.log(Math.log(r)) / Math.LN2;
     }
-    const tmp = x2 - y2 + worldX;
-    zy = 2 * zx * zy + worldY;
-    zx = tmp;
+
+    // z = z^2 + c
+    const newZx = zx2.minus(zy2).plus(cx);
+    const newZy = zx.mul(zy).mul(TWO).plus(cy);
+
+    zx = newZx;
+    zy = newZy;
   }
+
   return maxIterations;
 };
-
-// const juliaIterations = (
-//   worldX: number,
-//   worldY: number,
-//   maxIterations: number,
-// ): number => {
-//   // z starts at the pixel
-//   let zx = worldX;
-//   let zy = worldY;
-
-//   // fixed constant c
-//   const cx = -0.835;
-//   const cy = 0.312;
-
-//   for (let i = 0; i < maxIterations; i++) {
-//     const x2 = zx * zx;
-//     const y2 = zy * zy;
-
-//     if (x2 + y2 > 4) {
-//       return i;
-//     }
-
-//     const tmp = x2 - y2 + cx;
-//     zy = 2 * zx * zy + cy;
-//     zx = tmp;
-//   }
-
-//   return maxIterations;
-// };
 
 self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   const { camera, screen, tileIndex, generation } = event.data;
@@ -83,8 +68,8 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   {
     for (let x = 0; x < tile.width; x++) {
       const i = 0 * tile.width + x;
-      const worldX = origin.worldX + x * dx.worldX;
-      const worldY = origin.worldY + x * dx.worldY;
+      const worldX = origin.worldX.add(dx.worldX.mul(x));
+      const worldY = origin.worldY.add(dx.worldY.mul(x));
       const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
 
       if (iteration < maxIterations) {
@@ -99,8 +84,8 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   {
     for (let y = 0; y < tile.height; y++) {
       const i = y * tile.width + 0;
-      const worldX = origin.worldX + y * dy.worldX;
-      const worldY = origin.worldY + y * dy.worldY;
+      const worldX = origin.worldX.add(dy.worldX.mul(y));
+      const worldY = origin.worldY.add(dy.worldY.mul(y));
       const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
 
       if (iteration < maxIterations) {
@@ -116,8 +101,8 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     const yb = tile.height - 1;
     for (let x = 0; x < tile.width; x++) {
       const i = yb * tile.width + x;
-      const worldX = origin.worldX + x * dx.worldX + yb * dy.worldX;
-      const worldY = origin.worldY + x * dx.worldY + yb * dy.worldY;
+      const worldX = origin.worldX.add(dx.worldX.mul(x)).add(dy.worldX.mul(yb));
+      const worldY = origin.worldY.add(dx.worldY.mul(x)).add(dy.worldY.mul(yb));
 
       const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
 
@@ -134,8 +119,8 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     const xr = tile.width - 1;
     for (let y = 0; y < tile.height; y++) {
       const i = y * tile.width + xr;
-      const worldX = origin.worldX + xr * dx.worldX + y * dy.worldX;
-      const worldY = origin.worldY + xr * dx.worldY + y * dy.worldY;
+      const worldX = origin.worldX.add(dx.worldX.mul(xr)).add(dy.worldX.mul(y));
+      const worldY = origin.worldY.add(dx.worldY.mul(xr)).add(dy.worldY.mul(y));
 
       const iteration = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
 
@@ -165,8 +150,8 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
   for (let y = 1; y < tile.height - 1; y++) {
     for (let x = 1; x < tile.width - 1; x++) {
       const i = y * tile.width + x;
-      const worldX = origin.worldX + x * dx.worldX + y * dy.worldX;
-      const worldY = origin.worldY + x * dx.worldY + y * dy.worldY;
+      const worldX = origin.worldX.add(dx.worldX.mul(x)).add(dy.worldX.mul(y));
+      const worldY = origin.worldY.add(dx.worldY.mul(x)).add(dy.worldY.mul(y));
       iterations[i] = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
     }
   }
