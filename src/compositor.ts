@@ -74,10 +74,12 @@ export class Compositor {
     const tx = frontCamera.zoom.mul(dcx.mul(cosFront).sub(dcy.mul(sinFront)));
     const ty = frontCamera.zoom.mul(dcx.mul(sinFront).add(dcy.mul(cosFront)));
 
-    const e =
-      tx.add(halfScreenWidth).sub(a.mul(halfScreenWidth).add(c.mul(halfScreenHeight)));
-    const f =
-      ty.add(halfScreenHeight).sub(b.mul(halfScreenWidth).add(d.mul(halfScreenHeight)));
+    const e = tx
+      .add(halfScreenWidth)
+      .sub(a.mul(halfScreenWidth).add(c.mul(halfScreenHeight)));
+    const f = ty
+      .add(halfScreenHeight)
+      .sub(b.mul(halfScreenWidth).add(d.mul(halfScreenHeight)));
     this.backContext.setTransform(
       a.toNumber(),
       b.toNumber(),

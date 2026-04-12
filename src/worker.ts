@@ -35,11 +35,11 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
     worldY: new Decimal(event.data.camera.worldY),
     zoom: new Decimal(event.data.camera.zoom),
     rotation: event.data.camera.rotation,
-  }
+  };
   const tile = getTile(tileIndex, screen);
   const iterations = new Float32Array(tile.width * tile.height);
   const maxIterations = Math.min(
-    16000,
+    32_000,
     Math.floor(64 + 24 * Math.log2(parseFloat(event.data.camera.zoom))),
   );
 
@@ -51,19 +51,16 @@ self.addEventListener("message", (event: MessageEvent<RenderTileMessage>) => {
 
   const { dx, dy } = cameraController.getBasisVectors();
 
-  const dxWorldX = dx.worldX.toNumber();
-  const dxWorldY = dx.worldY.toNumber();
-  const dyWorldX = dy.worldX.toNumber();
-  const dyWorldY = dy.worldY.toNumber();
-  const originWorldX = origin.worldX.toNumber();
-  const originWorldY = origin.worldY.toNumber();
-
   let i = 0;
   for (let y = 0; y < tile.height; y++) {
     for (let x = 0; x < tile.width; x++) {
-      const worldX = originWorldX + dxWorldX * x + dyWorldX * y;
-      const worldY = originWorldY + dxWorldY * x + dyWorldY * y;
-      iterations[i++] = mandelbrotEscapeSmooth(worldX, worldY, maxIterations);
+      const worldX = origin.worldX.add(dx.worldX.mul(x)).add(dy.worldX.mul(y));
+      const worldY = origin.worldY.add(dx.worldY.mul(x)).add(dy.worldY.mul(y));
+      iterations[i++] = mandelbrotEscapeSmooth(
+        worldX.toNumber(),
+        worldY.toNumber(),
+        maxIterations,
+      );
     }
   }
 

@@ -4,11 +4,7 @@ type Pixel = [number, number, number, number];
 
 export type Gradient = {
   label: string;
-  fn: (
-    inside: boolean,
-    iterationCount: number,
-    maxIterations: number,
-  ) => Pixel;
+  fn: (inside: boolean, iterationCount: number, maxIterations: number) => Pixel;
 };
 
 const gradients: Gradient[] = [
@@ -74,19 +70,16 @@ const gradients: Gradient[] = [
   },
   {
     label: "Groovy",
-    fn: (
-      inside: boolean,
-      iterationCount: number
-    ): Pixel => {
+    fn: (inside: boolean, iterationCount: number): Pixel => {
       if (inside) {
         return [255, 255, 255, 255];
       }
-      if (Math.round(iterationCount) % 2 === 0){
+      if (Math.round(iterationCount) % 2 === 0) {
         return [152, 27, 242, 255];
       }
       return [224, 20, 27, 255];
     },
-  }
+  },
 ];
 
 /** Samples escape-time colors with the same fn as the renderer (outside points only). */

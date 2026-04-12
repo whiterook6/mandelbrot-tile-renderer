@@ -62,9 +62,9 @@ export class CameraController {
       console.error("Error parsing camera from localStorage", error);
       this.camera = CameraController.initialCamera;
       this.saveCamera();
-    } finally {
-      return this;
     }
+
+    return this;
   }
 
   setCamera(camera: Camera): CameraController {
@@ -79,7 +79,10 @@ export class CameraController {
   }
 
   saveCamera(): CameraController {
-    localStorage.setItem("camera", CameraController.stringifyCamera(this.camera));
+    localStorage.setItem(
+      "camera",
+      CameraController.stringifyCamera(this.camera),
+    );
     return this;
   }
 
@@ -184,8 +187,12 @@ export class CameraController {
     const sin = Math.sin(this.camera.rotation);
 
     return {
-      worldX: new Decimal(screenDx * cos + screenDy * sin).div(this.camera.zoom),
-      worldY: new Decimal(-screenDx * sin + screenDy * cos).div(this.camera.zoom),
+      worldX: new Decimal(screenDx * cos + screenDy * sin).div(
+        this.camera.zoom,
+      ),
+      worldY: new Decimal(-screenDx * sin + screenDy * cos).div(
+        this.camera.zoom,
+      ),
     };
   }
 }
