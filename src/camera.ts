@@ -100,6 +100,24 @@ export class CameraController {
     };
   }
 
+  /** Move the camera so the given screen pixel lies at the view center (zoom and rotation unchanged). */
+  centerOnScreenPoint(
+    screen: Screen,
+    screenX: number,
+    screenY: number,
+  ): CameraController {
+    const { worldX, worldY } = this.getWorldPosition(screen, {
+      screenX,
+      screenY,
+    });
+    this.camera = {
+      ...this.camera,
+      worldX,
+      worldY,
+    };
+    return this;
+  }
+
   /** World offset per +1 screen pixel in X and Y (same as differencing adjacent getWorldPosition calls). */
   getBasisVectors(): {
     dx: { worldX: Decimal; worldY: Decimal };

@@ -63,12 +63,12 @@ const main = () => {
   const compositor = new Compositor(canvas, backCanvas);
   const renderer = new Renderer(compositor, cameraController.getCamera());
   GradientController.init(renderer);
-  const setView = () => {
+  const setView = (immediate = false) => {
     const screen: Screen = getScreen(canvas);
     const camera = cameraController.getCamera();
     cameraController.saveCamera();
     Status.setView(camera, screen);
-    renderer.render(camera, screen);
+    renderer.render(camera, screen, immediate);
   };
 
   Status.resetView!.addEventListener("click", () => {
@@ -88,7 +88,9 @@ const main = () => {
     });
   });
 
+  let lastWheelTime = 0;
   const handleWheel = (event: WheelEvent) => {
+    lastWheelTime = performance.now();
     const screen: Screen = getScreen(canvas);
     const { x: cursorX, y: cursorY } = canvasCoordsFromEvent(event);
     cameraController.zoomCamera(screen, {
@@ -170,6 +172,24 @@ const main = () => {
   canvas.addEventListener("mousedown", handleTwistMouseDown);
   canvas.addEventListener("contextmenu", (event) => {
     event.preventDefault();
+  });
+
+  const WHEEL_RECENT_MS = 200;
+  canvas.addEventListener("dblclick", (event: MouseEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+    if (isPanning || isTwisting || event.buttons !== 0) {
+      return;
+    }
+    if (performance.now() - lastWheelTime < WHEEL_RECENT_MS) {
+      return;
+    }
+    event.preventDefault();
+    const screen: Screen = getScreen(canvas);
+    const { x, y } = canvasCoordsFromEvent(event);
+    cameraController.centerOnScreenPoint(screen, x, y);
+    setView(true);
   });
 
   window.addEventListener("keydown", (event) => {
