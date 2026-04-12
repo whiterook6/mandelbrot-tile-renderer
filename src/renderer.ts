@@ -3,20 +3,9 @@ import { Compositor } from "./compositor";
 import { GradientController } from "./gradient";
 import type { RenderedTileMessage, RenderTileMessage } from "./messages";
 import { Status } from "./status";
-import type { Screen } from "./tile";
+import { spiralTileIndicesFromScreenCenter, type Screen } from "./tile";
 
 const RENDER_DEBOUNCE_MS = 125;
-
-const shuffleTileIndices = (count: number): number[] => {
-  const indices = Array.from({ length: count }, (_, i) => i);
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const t = indices[i];
-    indices[i] = indices[j]!;
-    indices[j] = t!;
-  }
-  return indices;
-};
 
 export class Renderer {
   private workers: Worker[];
@@ -115,7 +104,8 @@ export class Renderer {
     const tileCount = this.screen.rowCount * this.screen.columnCount;
 
     Status.progress!.textContent = `${tileCount}`;
-    this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
+    const spiralOrder = spiralTileIndicesFromScreenCenter(screen);
+    this.workQueue = spiralOrder.map((tileIndex) => ({
       type: "requestTile",
       camera: {
         worldX: camera.worldX.toString(),
@@ -125,7 +115,7 @@ export class Renderer {
       },
       generation: this.generation,
       screen,
-      tileIndex: index,
+      tileIndex,
     }));
 
     this.cameraForActiveGeneration = { ...camera };
