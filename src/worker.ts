@@ -1,6 +1,7 @@
 /* global self */
 
 import Decimal from "decimal.js";
+import {Double} from 'double.js';
 import { CameraController } from "./camera";
 import type { RenderTileMessage, RenderedTileMessage } from "./messages";
 import { getTile } from "./tile";
@@ -12,17 +13,18 @@ const mandelbrotEscapeSmooth = (
   worldY: number,
   maxIterations: number,
 ): number => {
-  let zx = worldX;
-  let zy = worldY;
+  let zx = new Double(worldX);
+  let zy = new Double(worldY);
+  
   for (let i = 0; i < maxIterations; i++) {
-    const x2 = zx * zx;
-    const y2 = zy * zy;
-    if (x2 + y2 > 4) {
-      const r = Math.sqrt(x2 + y2);
+    const zx2 = zx.mul(zx);
+    const zy2 = zy.mul(zy);
+    if (zx2.add(zy2).gt(4)) {
+      const r = zx2.add(zy2).sqrt().toNumber();
       return i + 1 - Math.log(Math.log(r)) / Math.LN2;
     }
-    const tmp = zx * zx - zy * zy + worldX;
-    zy = 2 * zx * zy + worldY;
+    const tmp = zx2.sub(zy2).add(worldX);
+    zy = zy.mul(2).mul(zx).add(worldY);
     zx = tmp;
   }
   return maxIterations;
