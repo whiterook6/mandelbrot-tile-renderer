@@ -10,9 +10,9 @@ export const Mandelbrot = {
     for (let i = 0; i < maxIterations; i++) {
       const x2 = zx * zx;
       const y2 = zy * zy;
-      if (x2 + y2 > 4) {
-        const r = Math.sqrt(x2 + y2);
-        return i + 1 - Math.log(Math.log(r)) / Math.LN2;
+      const r2 = x2 + y2;
+      if (r2 > 4) {
+        return i + 1 - Math.log(Math.log(Math.sqrt(r2))) / Math.LN2;
       }
       const tmp = zx * zx - zy * zy + cx;
       zy = 2 * zx * zy + cy;
@@ -30,12 +30,13 @@ export const Mandelbrot = {
     for (let i = 0; i < maxIterations; i++) {
       const zx2 = zx.mul(zx);
       const zy2 = zy.mul(zy);
-      if (zx2.add(zy2).gt(4)) {
-        const r = zx2.add(zy2).sqrt().toNumber();
+      const r2 = zx2.add(zy2);
+      if (r2.gt(4)) {
+        const r = Math.sqrt(r2.toNumber());
         return i + 1 - Math.log(Math.log(r)) / Math.LN2;
       }
       const tmp = zx2.sub(zy2).add(cx);
-      zy = zy.mul(2).mul(zx).add(cy);
+      zy = zy.add(zy).mul(zx).add(cy);
       zx = tmp;
     }
     return maxIterations;
