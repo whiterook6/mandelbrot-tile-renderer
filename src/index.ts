@@ -1,11 +1,12 @@
+import Decimal from "decimal.js";
+import { Camera as CameraIcon, createElement, Home } from "lucide";
 import { CameraController, type Camera } from "./camera";
 import { fitCanvasesToLayout, getCanvasElement, getScreen } from "./canvas";
+import { Compositor } from "./compositor";
+import { GradientController } from "./gradient";
 import { Renderer } from "./renderer";
 import { Status } from "./status";
 import type { Screen } from "./tile";
-import { Camera as CameraIcon, createElement, Home } from "lucide";
-import { GradientController } from "./gradient";
-import { Compositor } from "./compositor";
 
 const setButtonWithIcon = (
   button: HTMLButtonElement,
@@ -50,9 +51,9 @@ const main = () => {
 
   const zoomToMandelbrot = (canvasEl: HTMLCanvasElement): Camera => {
     return {
-      worldX: -0.7436438870371587,
-      worldY: 0,
-      zoom: canvasEl.width / 3.5,
+      worldX: new Decimal(-0.7436438870371587),
+      worldY: new Decimal(0),
+      zoom: new Decimal(canvasEl.width / 3.5),
       rotation: 0,
     };
   };

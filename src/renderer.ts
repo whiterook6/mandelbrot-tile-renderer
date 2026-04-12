@@ -117,7 +117,12 @@ export class Renderer {
     Status.progress!.textContent = `${tileCount}`;
     this.workQueue = shuffleTileIndices(tileCount).map((index) => ({
       type: "requestTile",
-      camera,
+      camera: {
+        worldX: camera.worldX.toString(),
+        worldY: camera.worldY.toString(),
+        zoom: camera.zoom.toString(),
+        rotation: camera.rotation,
+      },
       generation: this.generation,
       screen,
       tileIndex: index,

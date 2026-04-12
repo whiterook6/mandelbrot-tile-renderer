@@ -1,19 +1,48 @@
+import Decimal from "decimal.js";
 import type { Screen } from "./tile";
 
 export type Camera = {
-  worldX: number;
-  worldY: number;
-  zoom: number;
+  worldX: Decimal;
+  worldY: Decimal;
+  zoom: Decimal;
   rotation: number;
 };
 
 export class CameraController {
   static initialCamera: Camera = {
-    worldX: 0,
-    worldY: 0,
-    zoom: 1,
+    worldX: new Decimal(0),
+    worldY: new Decimal(0),
+    zoom: new Decimal(1),
     rotation: 0,
   };
+
+  static parseCamera({
+    worldX,
+    worldY,
+    zoom,
+    rotation,
+  }: {
+    worldX: string;
+    worldY: string;
+    zoom: string;
+    rotation: string;
+  }): Camera {
+    return {
+      worldX: new Decimal(worldX),
+      worldY: new Decimal(worldY),
+      zoom: new Decimal(zoom),
+      rotation: parseFloat(rotation),
+    };
+  }
+
+  static stringifyCamera(camera: Camera): string {
+    return JSON.stringify({
+      worldX: camera.worldX.toString(),
+      worldY: camera.worldY.toString(),
+      zoom: camera.zoom.toString(),
+      rotation: camera.rotation.toString(),
+    });
+  }
 
   private camera: Camera;
   constructor(fallback?: Camera) {
@@ -28,18 +57,14 @@ export class CameraController {
     let fromLocalStorage;
     try {
       fromLocalStorage = JSON.parse(localStorage.getItem("camera")!);
+      this.camera = CameraController.parseCamera(fromLocalStorage);
     } catch (error) {
       console.error("Error parsing camera from localStorage", error);
+      this.camera = CameraController.initialCamera;
+      this.saveCamera();
+    } finally {
       return this;
     }
-
-    this.camera = {
-      ...CameraController.initialCamera,
-      ...fromLocalStorage,
-      generation: 0,
-    };
-
-    return this;
   }
 
   setCamera(camera: Camera): CameraController {
@@ -54,38 +79,32 @@ export class CameraController {
   }
 
   saveCamera(): CameraController {
-    localStorage.setItem("camera", JSON.stringify(this.camera));
+    localStorage.setItem("camera", CameraController.stringifyCamera(this.camera));
     return this;
-  }
-
-  getScreenPosition(
-    screen: Screen,
-    position: { worldX: number; worldY: number },
-  ): { screenX: number; screenY: number } {
-    const wx = position.worldX - this.camera.worldX;
-    const wy = position.worldY - this.camera.worldY;
-    const cos = Math.cos(this.camera.rotation);
-    const sin = Math.sin(this.camera.rotation);
-    const dx = (wx * cos - wy * sin) * this.camera.zoom;
-    const dy = (wx * sin + wy * cos) * this.camera.zoom;
-
-    return {
-      screenX: dx + screen.width / 2,
-      screenY: dy + screen.height / 2,
-    };
   }
 
   getWorldPosition(
     screen: Screen,
     position: { screenX: number; screenY: number },
-  ): { worldX: number; worldY: number } {
+  ): { worldX: Decimal; worldY: Decimal } {
     const dx = position.screenX - screen.width / 2;
     const dy = position.screenY - screen.height / 2;
     const { worldX: wx, worldY: wy } = this.screenOffsetToWorldDelta(dx, dy);
 
     return {
-      worldX: this.camera.worldX + wx,
-      worldY: this.camera.worldY + wy,
+      worldX: this.camera.worldX.add(wx),
+      worldY: this.camera.worldY.add(wy),
+    };
+  }
+
+  /** World offset per +1 screen pixel in X and Y (same as differencing adjacent getWorldPosition calls). */
+  getBasisVectors(): {
+    dx: { worldX: Decimal; worldY: Decimal };
+    dy: { worldX: Decimal; worldY: Decimal };
+  } {
+    return {
+      dx: this.screenOffsetToWorldDelta(1, 0),
+      dy: this.screenOffsetToWorldDelta(0, 1),
     };
   }
 
@@ -99,8 +118,8 @@ export class CameraController {
 
     this.camera = {
       ...this.camera,
-      worldX: this.camera.worldX - dwx,
-      worldY: this.camera.worldY - dwy,
+      worldX: this.camera.worldX.sub(dwx),
+      worldY: this.camera.worldY.sub(dwy),
     };
 
     return this;
@@ -116,18 +135,19 @@ export class CameraController {
   ): CameraController {
     const k = 0.005;
     const zoomFactor = Math.exp(-event.deltaY * k);
-    const newZoom = this.camera.zoom * zoomFactor;
+    const newZoom = this.camera.zoom.mul(zoomFactor);
+    const ONE = new Decimal(1);
 
     const dx = event.cursorX - screen.width / 2;
     const dy = event.cursorY - screen.height / 2;
-    const scale = 1 / this.camera.zoom - 1 / newZoom;
     const cos = Math.cos(this.camera.rotation);
     const sin = Math.sin(this.camera.rotation);
+    const scale = new Decimal(ONE.div(this.camera.zoom)).sub(ONE.div(newZoom));
 
     this.camera = {
       ...this.camera,
-      worldX: this.camera.worldX + (dx * cos + dy * sin) * scale,
-      worldY: this.camera.worldY + (-dx * sin + dy * cos) * scale,
+      worldX: this.camera.worldX.add(scale.mul(dx * cos + dy * sin)),
+      worldY: this.camera.worldY.add(scale.mul(-dx * sin + dy * cos)),
       zoom: newZoom,
     };
 
@@ -159,13 +179,13 @@ export class CameraController {
   private screenOffsetToWorldDelta(
     screenDx: number,
     screenDy: number,
-  ): { worldX: number; worldY: number } {
+  ): { worldX: Decimal; worldY: Decimal } {
     const cos = Math.cos(this.camera.rotation);
     const sin = Math.sin(this.camera.rotation);
-    const invZ = 1 / this.camera.zoom;
+
     return {
-      worldX: (screenDx * cos + screenDy * sin) * invZ,
-      worldY: (-screenDx * sin + screenDy * cos) * invZ,
+      worldX: new Decimal(screenDx * cos + screenDy * sin).div(this.camera.zoom),
+      worldY: new Decimal(-screenDx * sin + screenDy * cos).div(this.camera.zoom),
     };
   }
 }

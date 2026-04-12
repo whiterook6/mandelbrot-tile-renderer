@@ -2,7 +2,12 @@ import type { Screen, Tile } from "./tile";
 
 export type RenderTileMessage = {
   type: "requestTile";
-  camera: Camera;
+  camera: {
+    worldX: string;
+    worldY: string;
+    zoom: string;
+    rotation: number;
+  };
   generation: number;
   tileIndex: number;
   screen: Screen;
